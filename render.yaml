@@ -1,0 +1,12 @@
+# Render blueprint — explicit config so the start command is always correct.
+# Deploy via the Render dashboard: "New Web Service" → connect repo → Create.
+# Or import this file directly with "Import from Git" / "Import from blueprint".
+services:
+  - type: web
+    name: jarvis
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn ui.app:app
+    instanceType: free
+    region: oregon
+    branch: master
