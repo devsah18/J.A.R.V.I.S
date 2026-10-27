@@ -5,10 +5,13 @@ requests            # web search + Ollama backend
 flask>=2.0          # web UI (ui/app.py)
 gunicorn            # production WSGI server (Render)
 
-# --- Voice (required for voice mode) ---
+# --- Voice (required for desktop voice mode) ---
 pyttsx3             # offline text-to-speech (Windows SAPI5)
 SpeechRecognition   # speech-to-text (Google Web Speech, no key)
-PyAudio             # microphone capture for SpeechRecognition (Windows)
+# PyAudio is only needed for desktop microphone capture and requires the
+# system portaudio.h library to compile. It is NOT needed by the web UI.
+# On Linux hosts (e.g. Render) install portaudio-dev or comment it out:
+# PyAudio             # microphone capture for SpeechRecognition (Windows)
 
 # --- UI: optional ---
 # PySide6           # holographic HUD window
