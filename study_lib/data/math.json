@@ -1,0 +1,5 @@
+{
+    "Pythagorean theorem": "In a right-angled triangle, a^2 + b^2 = c^2.",
+    "Derivative": "The derivative of f(x) is the limit of the difference quotient as h approaches 0: f'(x) = lim (f(x+h) - f(x))/h.",
+    "Integration": "Integration is the reverse process of differentiation, representing the area under a curve."
+}

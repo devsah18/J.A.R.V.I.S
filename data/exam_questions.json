@@ -1,0 +1,123 @@
+[
+  {
+    "id": "neet_bio_01",
+    "exam": "NEET",
+    "subject": "Biology",
+    "chapter": "Cell: The Unit of Life",
+    "question": "Which of the following cell organelles is responsible for extracting energy from carbohydrates to form ATP?",
+    "options": {
+      "A": "Ribosome",
+      "B": "Mitochondrion",
+      "C": "Chloroplast",
+      "D": "Lysosome"
+    },
+    "correct": "B",
+    "explanation": "Mitochondria are known as the powerhouses of the cell. They perform cellular respiration, Krebs cycle, and oxidative phosphorylation to extract energy from carbohydrates (glucose) and store it as ATP."
+  },
+  {
+    "id": "neet_bio_02",
+    "exam": "NEET",
+    "subject": "Biology",
+    "chapter": "Genetics and Molecular Basis of Inheritance",
+    "question": "The process of translation in protein synthesis requires which of the following start codons?",
+    "options": {
+      "A": "UAA",
+      "B": "UAG",
+      "C": "AUG",
+      "D": "UGA"
+    },
+    "correct": "C",
+    "explanation": "AUG is the universal start codon that codes for Methionine. UAA, UAG, and UGA are stop (nonsense) codons that terminate protein translation."
+  },
+  {
+    "id": "neet_phy_01",
+    "exam": "NEET",
+    "subject": "Physics",
+    "chapter": "Electrostatics",
+    "question": "If the distance between two equal point charges is halved and each charge is doubled, the electrostatic force between them becomes how many times the initial force?",
+    "options": {
+      "A": "4 times",
+      "B": "8 times",
+      "C": "16 times",
+      "D": "2 times"
+    },
+    "correct": "C",
+    "explanation": "Coulomb's Law: F = k * (q1 * q2) / r^2. If charges are doubled (q' = 2q), numerator increases by 4. If distance is halved (r' = r/2), denominator becomes (1/2)^2 = 1/4. So F' = 4 / (1/4) * F = 16 * F."
+  },
+  {
+    "id": "jee_math_01",
+    "exam": "JEE",
+    "subject": "Mathematics",
+    "chapter": "Definite Integrals",
+    "question": "What is the value of the definite integral of sin(x) from 0 to pi?",
+    "options": {
+      "A": "0",
+      "B": "1",
+      "C": "2",
+      "D": "-1"
+    },
+    "correct": "C",
+    "explanation": "Integral of sin(x) dx is -cos(x). Evaluating from 0 to pi: [-cos(pi)] - [-cos(0)] = [-(-1)] - [-1] = 1 + 1 = 2."
+  },
+  {
+    "id": "jee_phy_01",
+    "exam": "JEE",
+    "subject": "Physics",
+    "chapter": "Kinematics",
+    "question": "A body starts from rest with uniform acceleration 'a'. What is the ratio of distances covered in the 3rd second to the 4th second?",
+    "options": {
+      "A": "3/4",
+      "B": "5/7",
+      "C": "7/9",
+      "D": "1/2"
+    },
+    "correct": "B",
+    "explanation": "Distance traveled in nth second is given by: Sn = u + (a/2)*(2n - 1). Since u = 0: S3 = (a/2)*(2*3 - 1) = 5a/2. S4 = (a/2)*(2*4 - 1) = 7a/2. Therefore, S3 / S4 = 5 / 7."
+  },
+  {
+    "id": "jee_chem_01",
+    "exam": "JEE",
+    "subject": "Chemistry",
+    "chapter": "Chemical Bonding",
+    "question": "According to Molecular Orbital Theory (MOT), what is the bond order of oxygen molecule O2?",
+    "options": {
+      "A": "1",
+      "B": "2",
+      "C": "2.5",
+      "D": "3"
+    },
+    "correct": "B",
+    "explanation": "O2 has 16 electrons. Its electronic configuration in MOT: sigma1s^2 sigma*1s^2 sigma2s^2 sigma*2s^2 sigma2pz^2 (pi2px^2 = pi2py^2) (pi*2px^1 = pi*2py^1). Bonding electrons Nb = 10, Antibonding Na = 6. Bond Order = (Nb - Na)/2 = (10 - 6)/2 = 2."
+  },
+  {
+    "id": "cet_math_01",
+    "exam": "CET",
+    "subject": "Mathematics",
+    "chapter": "Matrices",
+    "question": "If A is a 3x3 square matrix and |A| = 4, then what is the determinant of adj(A)?",
+    "options": {
+      "A": "4",
+      "B": "8",
+      "C": "16",
+      "D": "64"
+    },
+    "correct": "C",
+    "explanation": "For any n x n matrix A, |adj(A)| = |A|^(n - 1). Here n = 3 and |A| = 4, so |adj(A)| = 4^(3 - 1) = 4^2 = 16."
+  },
+  {
+    "id": "cet_phy_01",
+    "exam": "CET",
+    "subject": "Physics",
+    "chapter": "Rotational Dynamics",
+    "question": "The moment of inertia of a uniform circular disc of mass M and radius R about its diameter axis is:",
+    "options": {
+      "A": "MR^2 / 2",
+      "B": "MR^2 / 4",
+      "C": "MR^2",
+      "D": "2/5 MR^2"
+    },
+    "correct": "B",
+    "explanation": "By perpendicular axis theorem: Iz = Ix + Iy. For a symmetric disc, Ix = Iy = Id. So Iz = 2*Id. Since Iz = MR^2 / 2 (axis perpendicular through center), Id = Iz / 2 = MR^2 / 4."
+  }
+]
+

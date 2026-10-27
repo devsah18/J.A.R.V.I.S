@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS // TACTICAL HUD & STUDY CORE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyan: #00f2fe;
+            --cyan-glow: rgba(0, 242, 254, 0.45);
+            --cyan-dim: rgba(0, 242, 254, 0.15);
+            --cyan-dark: #072a3a;
+            --bg-deep: #020813;
+            --bg-card: rgba(4, 18, 30, 0.84);
+            --bg-card-border: rgba(0, 242, 254, 0.32);
+            --text-main: #b8ecff;
+            --text-dim: #5c8ca3;
+            --danger: #ff3366;
+            --danger-glow: rgba(255, 51, 102, 0.5);
+            --warning: #ffb800;
+            --success: #00ffaa;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 242, 254, 0.05) 0%, transparent 60%),
+                linear-gradient(rgba(0, 242, 254, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 254, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            position: relative;
+        }
+
+        /* Scanline Overlay */
+        body::before {
+            content: " ";
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%);
+            background-size: 100% 4px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* Top Header Bar */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+            border-bottom: 1px solid var(--bg-card-border);
+            background: rgba(2, 10, 20, 0.94);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            position: relative;
+        }
+
+        .brand-zone {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .arc-mini {
+            width: 26px;
+            height: 26px;
+            border: 2px solid var(--cyan);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px var(--cyan-glow);
+            animation: pulse-glow 3s infinite alternate;
+        }
+        .arc-mini-core {
+            width: 8px;
+            height: 8px;
+            background: var(--cyan);
+            border-radius: 50%;
+        }
+
+        .brand-text h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.25rem;
+            letter-spacing: 4px;
+            color: #fff;
+            text-shadow: 0 0 10px var(--cyan);
+        }
+
+        .brand-text p {
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8rem;
+        }
+
+        .hud-btn-toggle {
+            background: var(--cyan-dim);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+        .hud-btn-toggle:hover {
+            background: var(--cyan);
+            color: #000;
+            box-shadow: 0 0 10px var(--cyan);
+        }
+
+        .user-tag {
+            padding: 4px 12px;
+            border: 1px solid var(--cyan);
+            border-radius: 12px;
+            background: var(--cyan-dim);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Workspace Canvas where Panels live */
+        #workspace {
+            position: relative;
+            width: 100vw;
+            height: calc(100vh - 54px);
+            overflow: hidden;
+        }
+
+        /* Moveable Sci-Fi HUD Panels */
+        .hud-panel {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 6px;
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(0, 242, 254, 0.05);
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .hud-panel.active-focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.35);
+            z-index: 50;
+        }
+
+        .hud-panel::before {
+            content: "";
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 12px; height: 12px;
+            border-top: 2px solid var(--cyan);
+            border-left: 2px solid var(--cyan);
+            pointer-events: none;
+        }
+        .hud-panel::after {
+            content: "";
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 12px; height: 12px;
+            border-bottom: 2px solid var(--cyan);
+            border-right: 2px solid var(--cyan);
+            pointer-events: none;
+        }
+
+        /* Panel Draggable Header */
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(0, 242, 254, 0.1);
+            border-bottom: 1px solid var(--bg-card-border);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            color: var(--cyan);
+            cursor: move;
+        }
+
+        .panel-header .controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: default;
+        }
+
+        .win-ctrl-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+        .win-ctrl-btn:hover { color: #fff; }
+
+        .panel-body {
+            padding: 10px 12px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
+
+        /* Arc Core Visualizer */
+        .reactor-view {
+            height: 140px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .arc-outer-ring {
+            width: 130px; height: 130px;
+            border: 2px dashed rgba(0, 242, 254, 0.35);
+            border-radius: 50%;
+            position: absolute;
+            animation: rotate-cw 20s linear infinite;
+        }
+        .arc-middle-ring {
+            width: 100px; height: 100px;
+            border: 1px solid rgba(0, 242, 254, 0.5);
+            border-top: 3px solid var(--cyan);
+            border-bottom: 3px solid var(--cyan);
+            border-radius: 50%;
+            position: absolute;
+            animation: rotate-ccw 10s linear infinite;
+        }
+        .arc-inner-ring {
+            width: 65px; height: 65px;
+            border: 2px dotted var(--cyan);
+            border-radius: 50%;
+            position: absolute;
+            animation: rotate-cw 6s linear infinite;
+        }
+        .reactor-core-box {
+            position: absolute;
+            width: 48px; height: 48px;
+            border: 1px solid var(--cyan);
+            background: radial-gradient(circle, var(--cyan) 0%, rgba(0, 242, 254, 0.1) 70%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px var(--cyan);
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .reactor-core-box.listening {
+            border-color: var(--danger);
+            background: radial-gradient(circle, var(--danger) 0%, rgba(255, 51, 102, 0.2) 70%);
+            box-shadow: 0 0 35px var(--danger);
+            animation: pulse-glow 1s infinite alternate;
+        }
+        .reactor-core-box span {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #000;
+        }
+
+        /* Feed Messages */
+        .feed-container {
+            flex: 1;
+            background: rgba(2, 10, 18, 0.75);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 4px;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            min-height: 220px;
+        }
+
+        .chat-bubble {
+            padding: 8px 12px;
+            border-radius: 4px;
+            line-height: 1.4;
+            max-width: 90%;
+            word-break: break-word;
+        }
+        .chat-bubble.user {
+            align-self: flex-end;
+            background: rgba(0, 242, 254, 0.12);
+            border: 1px solid var(--cyan);
+            color: #fff;
+        }
+        .chat-bubble.ai {
+            align-self: flex-start;
+            background: rgba(4, 25, 42, 0.85);
+            border-left: 3px solid var(--cyan);
+            border-right: 1px solid rgba(0, 242, 254, 0.2);
+            border-top: 1px solid rgba(0, 242, 254, 0.2);
+            border-bottom: 1px solid rgba(0, 242, 254, 0.2);
+            color: var(--text-main);
+        }
+        .chat-bubble .bubble-tag {
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            color: var(--cyan);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        /* Command Bar */
+        .cmd-bar {
+            display: flex;
+            gap: 6px;
+            background: rgba(3, 14, 25, 0.95);
+            border: 1px solid var(--cyan);
+            border-radius: 4px;
+            padding: 6px;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+            align-items: center;
+            margin-top: 8px;
+        }
+        .cmd-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            padding: 6px 8px;
+        }
+        .cmd-btn {
+            background: var(--cyan-dim);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 6px 14px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+        .cmd-btn:hover { background: var(--cyan); color: #000; box-shadow: 0 0 10px var(--cyan); }
+
+        .mic-btn {
+            background: rgba(0, 242, 254, 0.1);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 6px 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.25s;
+        }
+        .mic-btn.recording { background: var(--danger); border-color: var(--danger); color: #fff; box-shadow: 0 0 15px var(--danger); }
+
+        .tts-toggle-btn {
+            background: rgba(0, 242, 254, 0.05);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            color: var(--text-dim);
+            padding: 6px 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .tts-toggle-btn.active { background: var(--cyan-dim); border-color: var(--cyan); color: #fff; }
+
+        /* Tools & Subjects Grid */
+        .study-subject-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+        .subject-pill {
+            padding: 3px 8px;
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            background: rgba(0, 242, 254, 0.05);
+            border-radius: 12px;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            cursor: pointer;
+        }
+        .subject-pill.active, .subject-pill:hover { border-color: var(--cyan); background: var(--cyan-dim); color: #fff; }
+
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; }
+        .tool-card {
+            background: rgba(0, 242, 254, 0.05);
+            border: 1px solid rgba(0, 242, 254, 0.2);
+            padding: 6px 4px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .tool-card:hover { border-color: var(--cyan); background: var(--cyan-dim); transform: translateY(-2px); }
+        .tool-card .icon { font-size: 1.1rem; margin-bottom: 2px; }
+        .tool-card .title { font-family: 'Orbitron'; font-size: 0.65rem; color: #fff; }
+
+        .wave-container { display: flex; align-items: flex-end; justify-content: space-between; height: 32px; padding: 2px 0; gap: 2px; }
+        .wave-bar { flex: 1; background: var(--cyan); opacity: 0.7; height: 20%; transition: height 0.15s ease; }
+        .wave-bar.speaking { background: var(--danger); }
+
+        /* MODAL STYLES FOR OTP AUTH */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(1, 6, 12, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 5000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-box {
+            background: rgba(4, 18, 30, 0.95);
+            border: 1px solid var(--cyan);
+            border-radius: 6px;
+            padding: 24px;
+            width: 380px;
+            box-shadow: 0 0 35px rgba(0, 242, 254, 0.4);
+            position: relative;
+        }
+        .modal-box::before { content: ""; position: absolute; top: -2px; left: -2px; width: 14px; height: 14px; border-top: 3px solid var(--cyan); border-left: 3px solid var(--cyan); }
+        .modal-box::after { content: ""; position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-bottom: 3px solid var(--cyan); border-right: 3px solid var(--cyan); }
+
+        .modal-title { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: #fff; text-shadow: 0 0 8px var(--cyan); margin-bottom: 6px; text-align: center; }
+        .modal-desc { font-size: 0.75rem; color: var(--text-dim); text-align: center; margin-bottom: 16px; }
+        .modal-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 242, 254, 0.05);
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            border-radius: 4px;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            outline: none;
+        }
+        .modal-input:focus { border-color: var(--cyan); box-shadow: 0 0 10px var(--cyan-glow); }
+        .modal-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--cyan);
+            border: none;
+            border-radius: 4px;
+            color: #000;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .modal-btn:hover { background: #fff; box-shadow: 0 0 15px #fff; }
+
+        @keyframes rotate-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes rotate-ccw { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+        @keyframes pulse-glow { 0% { box-shadow: 0 0 5px var(--cyan-glow); } 100% { box-shadow: 0 0 25px var(--cyan); } }
+    </style>
+</head>
+<body>
+
+    <!-- AUTHENTICATION OTP MODAL (Hidden by default unless requested) -->
+    <div id="authModal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-title" id="authTitle">SECURE ACCESS LINK</div>
+            <div class="modal-desc" id="authDesc">Enter your Email or Mobile Number to receive a secure OTP code.</div>
+
+            <!-- Step 1: Identifier Input -->
+            <div id="authStep1">
+                <input type="text" id="authIdentifier" class="modal-input" placeholder="e.g. dev@domain.com or +919876543210">
+                <button class="modal-btn" onclick="requestOTP()">SEND OTP CODE</button>
+                <div style="text-align: center; margin-top: 10px;">
+                    <a href="javascript:void(0)" onclick="closeAuthModal()" style="color: var(--text-dim); font-size: 0.75rem; text-decoration: none;">CONTINUE AS GUEST</a>
+                </div>
+            </div>
+
+            <!-- Step 2: OTP Verification -->
+            <div id="authStep2" style="display: none;">
+                <input type="text" id="authOtpCode" class="modal-input" placeholder="Enter 6-Digit OTP" maxlength="6" style="text-align: center; letter-spacing: 4px; font-size: 1.1rem;">
+                <div id="demoOtpBadge" style="font-size: 0.75rem; color: var(--warning); margin-bottom: 10px; text-align: center;"></div>
+                <button class="modal-btn" onclick="verifyOTP()">VERIFY & SIGN IN</button>
+                <div style="text-align: center; margin-top: 10px;">
+                    <a href="javascript:void(0)" onclick="backToStep1()" style="color: var(--text-dim); font-size: 0.75rem; text-decoration: none;">← CHANGE IDENTIFIER</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header / HUD Top Bar -->
+    <header>
+        <div class="brand-zone">
+            <div class="arc-mini"><div class="arc-mini-core"></div></div>
+            <div class="brand-text">
+                <h1>JARVIS // VARSHA</h1>
+                <p id="subTitleText">AUTONOMOUS INTELLIGENCE & STUDY CORE</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <div><span style="color: var(--text-dim);">TIME: </span><span id="clock" style="color: var(--cyan); font-weight: 700;">--:--:--</span></div>
+            
+            <!-- Language Selector -->
+            <select id="langSelect" onchange="changeLanguage()" style="background: rgba(0, 242, 254, 0.1); border: 1px solid var(--cyan); color: #fff; padding: 4px 8px; border-radius: 4px; font-family: 'Orbitron'; font-size: 0.75rem; cursor: pointer;">
+                <option value="en-US" style="background: #020a14; color: #fff;">🌐 ENGLISH</option>
+                <option value="hi-IN" style="background: #020a14; color: #fff;">🇮🇳 हिन्दी (HINDI)</option>
+                <option value="mr-IN" style="background: #020a14; color: #fff;">🇮🇳 मराठी (MARATHI)</option>
+            </select>
+
+            <!-- Voice Gender Selector -->
+            <select id="genderSelect" onchange="changeGender()" style="background: rgba(0, 242, 254, 0.1); border: 1px solid var(--cyan); color: #fff; padding: 4px 8px; border-radius: 4px; font-family: 'Orbitron'; font-size: 0.75rem; cursor: pointer;">
+                <option value="female" style="background: #020a14; color: #fff;">♀ FEMALE</option>
+                <option value="male" style="background: #020a14; color: #fff;">♂ MALE</option>
+            </select>
+
+            <button class="hud-btn-toggle" onclick="resetLayout()">🔄 RESET PANELS</button>
+            
+            <!-- User Profile / Sign In Pill -->
+            <div class="user-tag" id="userPill" onclick="openAuthModal()">
+                <span>👤</span> <strong id="userNameText">SIGN IN</strong>
+            </div>
+        </div>
+    </header>
+
+    <!-- Workspace for Moveable HUD Panels -->
+    <div id="workspace">
+
+        <!-- PANEL 1: Tactical Holographic Core & Assistant (Moveable) -->
+        <div class="hud-panel active-focus" id="panelCore" style="left: 310px; top: 10px; width: 580px; height: 600px;">
+            <div class="panel-header" onmousedown="startDrag(event, 'panelCore')">
+                <span id="corePanelTitle">🤖 JARVIS // TACTICAL CORE</span>
+                <div class="controls">
+                    <span style="font-size: 0.65rem; color: var(--cyan);" id="voiceStateBanner">VOICE READY</span>
+                    <button class="win-ctrl-btn" onclick="toggleMinimize('panelCore')">_</button>
+                </div>
+            </div>
+            <div class="panel-body" style="display: flex; flex-direction: column;">
+                
+                <div class="reactor-view">
+                    <div class="arc-outer-ring"></div>
+                    <div class="arc-middle-ring"></div>
+                    <div class="arc-inner-ring"></div>
+                    <div class="reactor-core-box" id="reactorCoreBox">
+                        <span id="coreLabel">CORE</span>
+                        <span id="coreSubLabel" style="color: #fff; font-size: 0.65rem;">ONLINE</span>
+                    </div>
+                </div>
+
+                <!-- Feed Output with Chat History -->
+                <div class="feed-container" id="feedContainer"></div>
+
+                <!-- Command & Mic Bar -->
+                <div class="cmd-bar">
+                    <button class="mic-btn" id="micBtn" onclick="toggleVoiceInput()">
+                        <span>🎙️</span> <span id="micBtnLabel">SPEAK</span>
+                    </button>
+                    <input type="text" id="userInput" class="cmd-input" placeholder="Type or click SPEAK to talk..." onkeydown="if(event.key==='Enter') executeCommand()">
+                    <button class="tts-toggle-btn active" id="ttsToggleBtn" onclick="toggleVoiceOutput()">
+                        <span>🔊</span> <strong id="voiceStateText" style="color: var(--cyan);">ON</strong>
+                    </button>
+                    <button class="cmd-btn" id="sendBtn" onclick="executeCommand()">TRANSMIT</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- PANEL 2: Hardware Telemetry & Audio Monitor (Moveable) -->
+        <div class="hud-panel" id="panelVitals" style="left: 15px; top: 10px; width: 280px; height: 360px;">
+            <div class="panel-header" onmousedown="startDrag(event, 'panelVitals')">
+                <span id="vitalsTitle">SYSTEM // VITALS</span>
+                <div class="controls">
+                    <span style="color: var(--success); font-size: 0.65rem;">LIVE</span>
+                    <button class="win-ctrl-btn" onclick="toggleMinimize('panelVitals')">_</button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div style="margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                        <span>⚙️ CPU LOAD</span><span id="cpuVal">--%</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(0, 242, 254, 0.1); border-radius: 3px; overflow: hidden;">
+                        <div id="cpuFill" style="height: 100%; width: 25%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan);"></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                        <span>🧠 MEMORY (RAM)</span><span id="memVal">-- GB</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(0, 242, 254, 0.1); border-radius: 3px; overflow: hidden;">
+                        <div id="memFill" style="height: 100%; width: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan);"></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                        <span>💾 STORAGE USAGE</span><span id="diskVal">--%</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(0, 242, 254, 0.1); border-radius: 3px; overflow: hidden;">
+                        <div id="diskFill" style="height: 100%; width: 70%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan);"></div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
+                    <div style="background: rgba(0, 242, 254, 0.05); padding: 6px; text-align: center; border-radius: 4px; border: 1px solid rgba(0, 242, 254, 0.2);">
+                        <div id="batVal" style="font-family: 'Orbitron'; font-size: 1.05rem; color: #fff;">--%</div>
+                        <div style="font-size: 0.65rem; color: var(--text-dim);">POWER CORE</div>
+                    </div>
+                    <div style="background: rgba(0, 242, 254, 0.05); padding: 6px; text-align: center; border-radius: 4px; border: 1px solid rgba(0, 242, 254, 0.2);">
+                        <div style="font-family: 'Orbitron'; font-size: 1.05rem; color: var(--cyan);">ONLINE</div>
+                        <div style="font-size: 0.65rem; color: var(--text-dim);">NEURAL LINK</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 12px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px;">
+                        <span>AUDIO SPECTRUM</span><span id="waveStatus">AWAITING</span>
+                    </div>
+                    <div class="wave-container" id="waveContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL 3: Study Matrix & Subject Solver (Moveable) -->
+        <div class="hud-panel" id="panelStudy" style="right: 15px; top: 10px; width: 330px; height: 320px;">
+            <div class="panel-header" onmousedown="startDrag(event, 'panelStudy')">
+                <span id="studyPanelTitle">📚 STUDY MATRIX</span>
+                <div class="controls">
+                    <span id="subCount" style="font-size: 0.65rem; color: var(--cyan);">6 SUBJECTS</span>
+                    <button class="win-ctrl-btn" onclick="toggleMinimize('panelStudy')">_</button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 6px;" id="studySubFilterLabel">CURRICULUM FILTER:</div>
+                <div class="study-subject-pills" id="subjectPills">
+                    <div class="subject-pill active" onclick="selectSubject('')">ALL</div>
+                </div>
+
+                <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 8px; margin-bottom: 4px;" id="studyQuickAskLabel">QUICK DOUBT SOLVER:</div>
+                <div class="tools-grid">
+                    <div class="tool-card" onclick="quickStudy('Physics', 'Explain Newton second law')"><div class="icon">⚡</div><div class="title" id="tPhysics">PHYSICS</div></div>
+                    <div class="tool-card" onclick="quickStudy('Math', 'What is derivative')"><div class="icon">📐</div><div class="title" id="tMath">MATHS</div></div>
+                    <div class="tool-card" onclick="quickStudy('Chemistry', 'Organic Chemistry')"><div class="icon">🧪</div><div class="title" id="tChem">CHEMISTRY</div></div>
+                    <div class="tool-card" onclick="quickStudy('Biology', 'Genetics DNA')"><div class="icon">🧬</div><div class="title" id="tBio">BIOLOGY</div></div>
+                    <div class="tool-card" onclick="quickStudy('Engineering', 'Data Structures')"><div class="icon">💻</div><div class="title" id="tEngg">ENGG</div></div>
+                    <div class="tool-card" onclick="loadExamQuiz('NEET')"><div class="icon">🩺</div><div class="title" id="tNeet">NEET MCQ</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL 4: Unified Tool Suite (Moveable) -->
+        <div class="hud-panel" id="panelTools" style="right: 15px; top: 340px; width: 330px; height: 265px;">
+            <div class="panel-header" onmousedown="startDrag(event, 'panelTools')">
+                <span id="toolsPanelTitle">🛠️ TOOL LAUNCHER</span>
+                <div class="controls">
+                    <span style="font-size: 0.65rem; color: var(--cyan);">READY</span>
+                    <button class="win-ctrl-btn" onclick="toggleMinimize('panelTools')">_</button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 6px;" id="toolLauncherLabel">DIRECT TOOLS:</div>
+                <div class="tools-grid">
+                    <div class="tool-card" onclick="runDirectTool('calculator', {expression: 'sqrt(144) + 25 * 4'})"><div class="icon">🧮</div><div class="title" id="tlCalc">CALCULATOR</div></div>
+                    <div class="tool-card" onclick="runDirectTool('jokes', {})"><div class="icon">😄</div><div class="title" id="tlJoke">TELL JOKE</div></div>
+                    <div class="tool-card" onclick="runDirectTool('game', {game: 'truth', action: 'next'})"><div class="icon">🎲</div><div class="title" id="tlGame">GAME</div></div>
+                    <div class="tool-card" onclick="runDirectTool('weather', {city: 'Delhi'})"><div class="icon">🌤️</div><div class="title" id="tlWeather">WEATHER</div></div>
+                    <div class="tool-card" onclick="runDirectTool('news', {topic: 'technology'})"><div class="icon">📰</div><div class="title" id="tlNews">NEWS</div></div>
+                    <div class="tool-card" onclick="promptImageGen()"><div class="icon">🎨</div><div class="title" id="tlImg">IMAGE GEN</div></div>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.65rem; color: var(--text-dim); font-family: 'JetBrains Mono';" id="toolTipText">
+                    Tip: Speak or type in Hindi or English to activate all capabilities.
+                </div>
+            </div>
+        </div>
+
+        <!-- PANEL 5: Terminal Audit Log & History (Moveable) -->
+        <div class="hud-panel" id="panelLog" style="left: 15px; top: 380px; width: 280px; height: 225px;">
+            <div class="panel-header" onmousedown="startDrag(event, 'panelLog')">
+                <span id="logPanelTitle">AUDIT & HISTORY</span>
+                <div class="controls">
+                    <button class="win-ctrl-btn" onclick="clearHistory()" title="Clear Chat History">🗑️</button>
+                    <button class="win-ctrl-btn" onclick="toggleMinimize('panelLog')">_</button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div id="terminalLog" style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 4px;">
+                    <div>[00:00:01] JARVIS HUD ONLINE</div>
+                    <div>[00:00:02] SQLITE CHAT STORE MOUNTED</div>
+                    <div>[00:00:03] UNIVERSAL HINDI ENGINE READY</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ==========================================
+        // USER AUTHENTICATION & SESSION
+        // ==========================================
+        let currentUser = localStorage.getItem("jarvis_user") || "guest";
+        let currentUserName = localStorage.getItem("jarvis_user_name") || "SIGN IN";
+        let currentLanguage = localStorage.getItem("jarvis_lang") || "en-US";
+        let currentGender = localStorage.getItem("jarvis_gender") || "female";
+
+        function isNonEnglish() {
+            return currentLanguage === "hi-IN" || currentLanguage === "mr-IN";
+        }
+
+        function getLangCode() {
+            if (currentLanguage === "hi-IN") return "hi";
+            if (currentLanguage === "mr-IN") return "mr";
+            return "en";
+        }
+
+        function changeGender() {
+            currentGender = document.getElementById("genderSelect").value;
+            localStorage.setItem("jarvis_gender", currentGender);
+            logTerminal("Voice gender set to: [" + currentGender.toUpperCase() + "]");
+        }
+
+        function updateAuthUI() {
+            const signInText = currentLanguage === "hi-IN" ? "साइन इन" : currentLanguage === "mr-IN" ? "साइन इन" : "SIGN IN";
+            document.getElementById("userNameText").innerText = currentUser === "guest" ? signInText : currentUserName;
+        }
+
+        function openAuthModal() {
+            document.getElementById("authModal").style.display = "flex";
+            backToStep1();
+        }
+
+        function closeAuthModal() {
+            document.getElementById("authModal").style.display = "none";
+        }
+
+        function backToStep1() {
+            document.getElementById("authStep1").style.display = "block";
+            document.getElementById("authStep2").style.display = "none";
+            document.getElementById("authDesc").innerText = currentLanguage === "hi-IN" 
+                ? "OTP कोड प्राप्त करने के लिए अपना ईमेल या मोबाइल नंबर दर्ज करें।" 
+                : "Enter your Email or Mobile Number to receive a secure OTP code.";
+        }
+
+        let pendingIdentifier = "";
+
+        async function requestOTP() {
+            const idInput = document.getElementById("authIdentifier").value.trim();
+            if (!idInput) {
+                alert(currentLanguage === "hi-IN" ? "कृपया ईमेल या मोबाइल नंबर दर्ज करें।" : "Please enter email or phone number.");
+                return;
+            }
+            pendingIdentifier = idInput;
+            try {
+                const res = await fetch("/api/auth/send-otp", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({identifier: pendingIdentifier})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById("authStep1").style.display = "none";
+                    document.getElementById("authStep2").style.display = "block";
+                    document.getElementById("demoOtpBadge").innerText = `🔑 Verification Code: ${data.demo_otp} (Valid for 5 mins)`;
+                    logTerminal(`OTP transmitted to: ${pendingIdentifier}`);
+                }
+            } catch(e) {
+                alert("Auth Error: " + e);
+            }
+        }
+
+        async function verifyOTP() {
+            const otp = document.getElementById("authOtpCode").value.trim();
+            if (!otp) return;
+            try {
+                const res = await fetch("/api/auth/verify-otp", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({identifier: pendingIdentifier, otp: otp})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentUser = data.identifier;
+                    currentUserName = data.user_name.toUpperCase();
+                    localStorage.setItem("jarvis_user", currentUser);
+                    localStorage.setItem("jarvis_user_name", currentUserName);
+                    updateAuthUI();
+                    closeAuthModal();
+                    logTerminal(`User verified and signed in: [${currentUser}]`);
+                    loadChatHistory();
+                    if (currentLanguage === "hi-IN") {
+                        speakResponse(`स्वागत है ${currentUserName}, आप सफलतापूर्वक साइन इन हो चुके हैं।`);
+                    } else {
+                        speakResponse(`Welcome ${currentUserName}, session authenticated.`);
+                    }
+                } else {
+                    alert(data.error || "Invalid OTP code.");
+                }
+            } catch(e) {
+                alert("Verification error: " + e);
+            }
+        }
+
+        // ==========================================
+        // PERSISTENT CHAT HISTORY
+        // ==========================================
+        async function loadChatHistory() {
+            try {
+                const res = await fetch(`/api/history?user=${encodeURIComponent(currentUser)}`);
+                const data = await res.json();
+                const feed = document.getElementById("feedContainer");
+                feed.innerHTML = "";
+                if (data.history && data.history.length > 0) {
+                    data.history.forEach(item => {
+                        renderBubble(item.sender, item.message, item.tag, false);
+                    });
+                } else {
+                    const welcome = currentLanguage === "mr-IN"
+                        ? "जार्विस एआय सहाय्यक आणि सार्वत्रिक अभ्यास कोर ऑनलाइन आहे. सर्व पॅनेल ड्रॅग करता येतात. बोला किंवा टाइप करा!"
+                        : currentLanguage === "hi-IN"
+                        ? "जार्विस एआई सहायक और यूनिवर्सल स्टडी कोर ऑनलाइन है। सभी पैनल चलायमान (moveable) हैं। बोलकर या लिखकर अपना कोई भी सवाल पूछें!"
+                        : "JARVIS AI Assistant & Universal Study Protocol active. All panels are draggable and moveable. Click SPEAK or type to solve doubts or run commands.";
+                    renderBubble("ai", welcome, "SYSTEM INITIALIZATION", false);
+                }
+                feed.scrollTop = feed.scrollHeight;
+            } catch(e) {
+                console.error("History load error:", e);
+            }
+        }
+
+        async function clearHistory() {
+            if (!confirm(currentLanguage === "mr-IN" ? "तुम्हाला संपूर्ण चॅट इतिहास हटवायचा आहे का?" : currentLanguage === "hi-IN" ? "क्या आप पूरा चैट इतिहास हटाना चाहते हैं?" : "Clear all chat history for this user?")) return;
+            try {
+                await fetch("/api/history/clear", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({user: currentUser})
+                });
+                loadChatHistory();
+                logTerminal("Chat history wiped.");
+            } catch(e) {}
+        }
+
+        function renderBubble(sender, text, tag, scroll = true) {
+            const feed = document.getElementById('feedContainer');
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${sender}`;
+            if (tag) {
+                const tagEl = document.createElement('div');
+                tagEl.className = 'bubble-tag';
+                tagEl.innerText = tag;
+                bubble.appendChild(tagEl);
+            }
+            const textEl = document.createElement('div');
+            textEl.innerText = text;
+            bubble.appendChild(textEl);
+            feed.appendChild(bubble);
+            if (scroll) feed.scrollTop = feed.scrollHeight;
+        }
+
+        // ==========================================
+        // 100% UNIVERSAL HINDI LOCALIZATION
+        // ==========================================
+        function applyLanguageStrings(lang) {
+            const isHi = (lang === "hi-IN");
+            const isMr = (lang === "mr-IN");
+            const isIndic = isHi || isMr;
+            document.getElementById("langSelect").value = lang;
+            // Restore gender select
+            document.getElementById("genderSelect").value = currentGender;
+
+            // Subtitle
+            document.getElementById("subTitleText").innerText = isMr ? "स्वायत्त बुद्धिमत्ता आणि अभ्यास कोर" : isHi ? "स्वायत्त बुद्धिमत्ता और संपूर्ण अध्ययन कोर" : "AUTONOMOUS INTELLIGENCE & STUDY CORE";
+            // Panel titles
+            document.getElementById("corePanelTitle").innerText = isMr ? "🤖 जार्विस // मुख्य कोर" : isHi ? "🤖 जार्विस // मुख्य कोर" : "🤖 JARVIS // TACTICAL CORE";
+            document.getElementById("vitalsTitle").innerText = isMr ? "सिस्टम // हार्डवेअर स्थिती" : isHi ? "सिस्टम // हार्डवेयर स्थिति" : "SYSTEM // VITALS";
+            document.getElementById("studyPanelTitle").innerText = isMr ? "📚 अभ्यास मॅट्रिक्स" : isHi ? "📚 अध्ययन ज्ञान मैट्रिक्स" : "📚 STUDY MATRIX";
+            document.getElementById("toolsPanelTitle").innerText = isMr ? "🛠️ साधन लाँचर" : isHi ? "🛠️ उपकरण लॉन्चर" : "🛠️ TOOL LAUNCHER";
+            document.getElementById("logPanelTitle").innerText = isMr ? "ऑडिट आणि इतिहास" : isHi ? "ऑडिट और इतिहास" : "AUDIT & HISTORY";
+
+            // Input & buttons
+            document.getElementById("userInput").placeholder = isMr ? "कोणताही प्रश्न विचारा किंवा बोला..." : isHi ? "कोई भी सवाल पूछें या बोलें (जैसे 'न्यूटन का नियम', 'मौसम बताओ')..." : "Type or click SPEAK to talk...";
+            document.getElementById("micBtnLabel").innerText = isMr ? "बोला" : isHi ? "बोलें" : "SPEAK";
+            document.getElementById("sendBtn").innerText = isMr ? "पाठवा" : isHi ? "भेजें" : "TRANSMIT";
+
+            // Subject titles
+            document.getElementById("tPhysics").innerText = isMr ? "भौतिकशास्त्र" : isHi ? "भौतिक विज्ञान" : "PHYSICS";
+            document.getElementById("tMath").innerText = isMr ? "गणित" : isHi ? "गणित" : "MATHS";
+            document.getElementById("tChem").innerText = isMr ? "रसायनशास्त्र" : isHi ? "रसायन" : "CHEMISTRY";
+            document.getElementById("tBio").innerText = isMr ? "जीवशास्त्र" : isHi ? "जीव विज्ञान" : "BIOLOGY";
+            document.getElementById("tEngg").innerText = isMr ? "अभियांत्रिकी" : isHi ? "इंजीनियरिंग" : "ENGG";
+            document.getElementById("tNeet").innerText = isMr ? "नीट प्रश्न" : isHi ? "नीट प्रश्न" : "NEET MCQ";
+
+            // Tools titles
+            document.getElementById("tlCalc").innerText = isMr ? "कॅल्क्युलेटर" : isHi ? "कैलकुलेटर" : "CALCULATOR";
+            document.getElementById("tlJoke").innerText = isMr ? "विनोद" : isHi ? "चुटकुला" : "TELL JOKE";
+            document.getElementById("tlGame").innerText = isMr ? "गेम" : isHi ? "गेम" : "GAME";
+            document.getElementById("tlWeather").innerText = isMr ? "हवामान" : isHi ? "मौसम" : "WEATHER";
+            document.getElementById("tlNews").innerText = isMr ? "बातम्या" : isHi ? "समाचार" : "NEWS";
+            document.getElementById("tlImg").innerText = isMr ? "प्रतिमा बनवा" : isHi ? "छवि बनाएँ" : "IMAGE GEN";
+
+            updateAuthUI();
+        }
+
+        function changeLanguage() {
+            currentLanguage = document.getElementById("langSelect").value;
+            localStorage.setItem("jarvis_lang", currentLanguage);
+            applyLanguageStrings(currentLanguage);
+
+            if (speechRecognition) speechRecognition.lang = currentLanguage;
+
+            if (currentLanguage === "mr-IN") {
+                logTerminal("भाषा बदलली: [मराठी (100% Marathi Active)]");
+                speakResponse("नमस्कार! आता मी तुमच्या सर्व प्रश्नांची उत्तरे फक्त मराठीत देईन.");
+            } else if (currentLanguage === "hi-IN") {
+                logTerminal("भाषा बदली गई: [हिन्दी (100% Hindi Active)]");
+                speakResponse("नमस्ते! अब मैं आपके सभी सवालों के जवाब केवल हिन्दी में दूँगा।");
+            } else {
+                logTerminal("Language set to: [English]");
+                speakResponse("Switched to English language mode.");
+            }
+        }
+
+        // ==========================================
+        // DRAG & MOVEABLE WORKSPACE ENGINE
+        // ==========================================
+        let isDragging = false;
+        let dragTarget = null;
+        let dragOffset = { x: 0, y: 0 };
+        let highestZ = 50;
+
+        function startDrag(e, panelId) {
+            if (e.target.classList.contains('win-ctrl-btn')) return;
+            isDragging = true;
+            dragTarget = document.getElementById(panelId);
+            highestZ++;
+            dragTarget.style.zIndex = highestZ;
+            document.querySelectorAll('.hud-panel').forEach(p => p.classList.remove('active-focus'));
+            dragTarget.classList.add('active-focus');
+
+            const rect = dragTarget.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+
+            window.addEventListener('mousemove', onDrag);
+            window.addEventListener('mouseup', stopDrag);
+        }
+
+        function onDrag(e) {
+            if (!isDragging || !dragTarget) return;
+            let left = e.clientX - dragOffset.x;
+            let top = e.clientY - dragOffset.y;
+            const maxLeft = window.innerWidth - dragTarget.offsetWidth - 10;
+            const maxTop = window.innerHeight - dragTarget.offsetHeight - 10;
+            left = Math.max(10, Math.min(left, maxLeft));
+            top = Math.max(10, Math.min(top, maxTop));
+            dragTarget.style.left = left + 'px';
+            dragTarget.style.top = top + 'px';
+            dragTarget.style.right = 'auto';
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            window.removeEventListener('mousemove', onDrag);
+            window.removeEventListener('mouseup', stopDrag);
+        }
+
+        function toggleMinimize(panelId) {
+            const panel = document.getElementById(panelId);
+            const body = panel.querySelector('.panel-body');
+            if (body.style.display === 'none') {
+                body.style.display = 'flex';
+                panel.style.height = panel.dataset.origHeight || '340px';
+            } else {
+                panel.dataset.origHeight = panel.style.height;
+                body.style.display = 'none';
+                panel.style.height = '40px';
+            }
+        }
+
+        function resetLayout() {
+            document.getElementById('panelCore').style = "left: 310px; top: 10px; width: 580px; height: 600px;";
+            document.getElementById('panelVitals').style = "left: 15px; top: 10px; width: 280px; height: 360px;";
+            document.getElementById('panelStudy').style = "right: 15px; top: 10px; width: 330px; height: 320px;";
+            document.getElementById('panelTools').style = "right: 15px; top: 340px; width: 330px; height: 265px;";
+            document.getElementById('panelLog').style = "left: 15px; top: 380px; width: 280px; height: 225px;";
+            document.querySelectorAll('.panel-body').forEach(b => b.style.display = '');
+            logTerminal("Layout reset to default positions.");
+        }
+
+        // ==========================================
+        // DUAL VOICE INPUT (Microphone) & OUTPUT (TTS)
+        // ==========================================
+        let voiceOutputEnabled = true;
+        let isListening = false;
+        let isSpeaking = false;
+        let selectedSubject = '';
+        let speechRecognition = null;
+
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRec) {
+            speechRecognition = new SpeechRec();
+            speechRecognition.continuous = false;
+            speechRecognition.interimResults = true;
+            speechRecognition.lang = currentLanguage;
+
+            speechRecognition.onstart = () => {
+                setListeningState(true);
+                logTerminal(`Microphone active: [${currentLanguage}]...`);
+            };
+
+            speechRecognition.onresult = (event) => {
+                let interim = '';
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+                    else interim += event.results[i][0].transcript;
+                }
+                if (interim) {
+                    document.getElementById('userInput').value = interim;
+                    document.getElementById('voiceStateBanner').innerText = `HEARING: "${interim}"`;
+                }
+                if (finalTranscript) {
+                    document.getElementById('userInput').value = finalTranscript;
+                    document.getElementById('voiceStateBanner').innerText = "AUDIO TRANSCRIBED";
+                    logTerminal(`Voice input: "${finalTranscript}"`);
+                    executeCommand();
+                }
+            };
+
+            speechRecognition.onerror = (e) => {
+                setListeningState(false);
+                if (e.error === 'network' || e.error === 'not-allowed') {
+                    listenViaPyAudio();
+                }
+            };
+
+            speechRecognition.onend = () => setListeningState(false);
+        }
+
+        async function listenViaPyAudio() {
+            setListeningState(true);
+            logTerminal(`Hardware mic via PyAudio [${currentLanguage}]...`);
+            try {
+                const res = await fetch('/api/voice/listen', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({timeout: 7, phrase_time_limit: 10, lang: currentLanguage})
+                });
+                const data = await res.json();
+                setListeningState(false);
+                if (data.success && data.text) {
+                    document.getElementById('userInput').value = data.text;
+                    logTerminal(`PyAudio heard: "${data.text}"`);
+                    executeCommand();
+                } else {
+                    logTerminal(`PyAudio notice: ${data.error || 'No speech heard'}`);
+                }
+            } catch (err) {
+                setListeningState(false);
+                logTerminal(`PyAudio error: ${err}`);
+            }
+        }
+
+        function setListeningState(listening) {
+            isListening = listening;
+            const micBtn = document.getElementById('micBtn');
+            const coreBox = document.getElementById('reactorCoreBox');
+            const banner = document.getElementById('voiceStateBanner');
+            const isMr = currentLanguage === 'mr-IN';
+            const isHi = currentLanguage === 'hi-IN';
+            if (listening) {
+                micBtn.classList.add('recording');
+                document.getElementById('micBtnLabel').innerText = isMr ? "ऐकत आहे" : isHi ? "सुन रहा हूँ" : "LISTENING";
+                coreBox.classList.add('listening');
+                banner.innerText = isMr ? "ऐकत आहे... बोला" : isHi ? "सुन रहा हूँ... बोलिए" : "LISTENING... SPEAK NOW";
+            } else {
+                micBtn.classList.remove('recording');
+                document.getElementById('micBtnLabel').innerText = isMr ? "बोला" : isHi ? "बोलें" : "SPEAK";
+                coreBox.classList.remove('listening');
+                banner.innerText = isMr ? "आवाज तयार" : isHi ? "तैयार है" : "VOICE READY";
+            }
+        }
+
+        async function toggleVoiceInput() {
+            if (isListening) {
+                if (speechRecognition) try { speechRecognition.stop(); } catch(e){}
+                setListeningState(false);
+                return;
+            }
+            if (speechRecognition) {
+                speechRecognition.lang = currentLanguage;
+                try {
+                    speechRecognition.start();
+                    return;
+                } catch(e) {}
+            }
+            listenViaPyAudio();
+        }
+
+        function isHindi(text) {
+            return currentLanguage === "hi-IN" || currentLanguage === "mr-IN" || /[\u0900-\u097F]/.test(text);
+        }
+
+        async function speakResponse(text) {
+            if (!voiceOutputEnabled || !text) return;
+            const cleanText = text.replace(/[*_#`~[\]]/g, ' ').substring(0, 450);
+            const langCode = getLangCode(); // "hi", "mr", or "en"
+
+            // For Hindi / Marathi: try browser voice first, then gTTS fallback
+            if (langCode === "hi" || langCode === "mr") {
+                let nativeVoice = null;
+                if ('speechSynthesis' in window) {
+                    const voices = window.speechSynthesis.getVoices();
+                    // Filter voices matching the language
+                    const langVoices = voices.filter(v => v.lang.includes(langCode));
+                    // Try to match gender preference
+                    nativeVoice = langVoices.find(v => v.name.toLowerCase().includes(currentGender)) || langVoices[0] || null;
+                }
+
+                if (nativeVoice) {
+                    window.speechSynthesis.cancel();
+                    const u = new SpeechSynthesisUtterance(cleanText);
+                    u.voice = nativeVoice;
+                    u.lang = currentLanguage;
+                    u.rate = 1.0;
+                    const label = langCode === "mr" ? "MARATHI TTS" : "HINDI TTS";
+                    u.onstart = () => { isSpeaking = true; document.getElementById('waveStatus').innerText = label; };
+                    u.onend = () => { isSpeaking = false; document.getElementById('waveStatus').innerText = "AWAITING"; };
+                    window.speechSynthesis.speak(u);
+                    return;
+                }
+
+                // Fallback to server-side gTTS
+                try {
+                    const label = langCode === "mr" ? "MARATHI SYNTHESIS" : "HINDI SYNTHESIS";
+                    document.getElementById('waveStatus').innerText = label;
+                    const res = await fetch('/api/voice/speak', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({text: cleanText, lang: currentLanguage, gender: currentGender})
+                    });
+                    const data = await res.json();
+                    if (data.success && data.audio_base64) {
+                        const audio = new Audio("data:audio/mp3;base64," + data.audio_base64);
+                        isSpeaking = true;
+                        audio.onplay = () => { isSpeaking = true; document.getElementById('waveStatus').innerText = "SPEAKING"; };
+                        audio.onended = () => { isSpeaking = false; document.getElementById('waveStatus').innerText = "AWAITING"; };
+                        audio.play();
+                        return;
+                    }
+                } catch(e) {}
+            }
+
+            // English: use browser SpeechSynthesis with gender preference
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(cleanText);
+                u.rate = 1.05;
+                const voices = window.speechSynthesis.getVoices();
+                const engVoices = voices.filter(v => v.lang.includes('en'));
+                // Try to match gender preference
+                let selectedVoice = engVoices.find(v => v.name.toLowerCase().includes(currentGender));
+                if (!selectedVoice) {
+                    // Fallback: pick known voices by name
+                    if (currentGender === "male") {
+                        selectedVoice = engVoices.find(v => v.name.includes('David') || v.name.includes('Mark') || v.name.includes('Male'));
+                    } else {
+                        selectedVoice = engVoices.find(v => v.name.includes('Zira') || v.name.includes('Hazel') || v.name.includes('Female'));
+                    }
+                }
+                if (!selectedVoice) selectedVoice = engVoices.find(v => v.name.includes('Natural') || v.name.includes('Google'));
+                if (selectedVoice) u.voice = selectedVoice;
+
+                u.onstart = () => { isSpeaking = true; document.getElementById('waveStatus').innerText = "SPEAKING"; };
+                u.onend = () => { isSpeaking = false; document.getElementById('waveStatus').innerText = "AWAITING"; };
+                u.onerror = () => { isSpeaking = false; };
+                window.speechSynthesis.speak(u);
+            } else {
+                fetch('/api/voice/speak', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({text: cleanText, lang: 'en', gender: currentGender})
+                }).catch(e => console.error(e));
+            }
+        }
+
+        function toggleVoiceOutput() {
+            voiceOutputEnabled = !voiceOutputEnabled;
+            const btn = document.getElementById('ttsToggleBtn');
+            const txt = document.getElementById('voiceStateText');
+            if (voiceOutputEnabled) {
+                btn.classList.add('active');
+                txt.innerText = "ON";
+                txt.style.color = "var(--cyan)";
+                speakResponse(currentLanguage === "mr-IN" ? "आवाज आउटपुट चालू आहे." : currentLanguage === "hi-IN" ? "आवाज़ आउटपुट चालू है।" : "Voice output active.");
+            } else {
+                btn.classList.remove('active');
+                txt.innerText = "OFF";
+                txt.style.color = "var(--danger)";
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            }
+        }
+
+        // ==========================================
+        // COMMAND & STUDY EXECUTION
+        // ==========================================
+        async function executeCommand() {
+            const input = document.getElementById('userInput');
+            const val = input.value.trim();
+            if (!val) return;
+            input.value = '';
+
+            const tag = currentLanguage === "mr-IN" ? "वापरकर्ता // मराठी" : currentLanguage === "hi-IN" ? "उपयोगकर्ता // हिन्दी" : "OPERATOR";
+            renderBubble('user', val, tag);
+            logTerminal(`Query: "${val.substring(0, 25)}..."`);
+
+            if (selectedSubject) {
+                try {
+                    const res = await fetch('/api/study/ask', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({question: val, subject: selectedSubject, lang: currentLanguage, user: currentUser})
+                    });
+                    const data = await res.json();
+                    renderBubble('ai', data.answer, isNonEnglish() ? `${data.source} // ${currentLanguage === 'mr-IN' ? 'मराठी' : 'हिन्दी'}` : `${data.source} // ${data.subject || 'GENERAL'}`);
+                    speakResponse(data.answer);
+                    return;
+                } catch(e) {}
+            }
+
+            try {
+                const res = await fetch('/api/command', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({command: val, lang: currentLanguage, user: currentUser})
+                });
+                const data = await res.json();
+                const reply = data.response || "No response received.";
+                renderBubble('ai', reply, currentLanguage === 'mr-IN' ? "जार्विस // मराठी" : currentLanguage === 'hi-IN' ? "जार्विस // हिन्दी" : "JARVIS RESPONSE");
+                speakResponse(reply);
+            } catch (e) {
+                renderBubble('ai', 'Error: ' + e, 'ERROR');
+            }
+        }
+
+        function quickStudy(subject, question) {
+            selectSubject(subject.toLowerCase());
+            document.getElementById('userInput').value = question;
+            executeCommand();
+        }
+
+        async function loadExamQuiz(examType) {
+            logTerminal(`Fetching ${examType} MCQ...`);
+            try {
+                const res = await fetch(`/api/exam/quiz?exam=${examType}&lang=${currentLanguage}`);
+                const data = await res.json();
+                if (data.output) {
+                    renderBubble('ai', data.output, `${examType} MCQ // ${currentLanguage === 'hi-IN' ? 'हिन्दी' : 'EXAM'}`);
+                    speakResponse(data.output);
+                }
+            } catch(e) {}
+        }
+
+        async function runDirectTool(toolName, params) {
+            logTerminal(`Tool: [${toolName.toUpperCase()}]`);
+            try {
+                const res = await fetch('/api/tool/execute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({tool: toolName, lang: currentLanguage, ...params})
+                });
+                const data = await res.json();
+                if (data.output) {
+                    renderBubble('ai', data.output, `TOOL // ${toolName.toUpperCase()}`);
+                    speakResponse(data.output);
+                }
+            } catch(e) {}
+        }
+
+        function promptImageGen() {
+            const prompt = window.prompt(currentLanguage === "hi-IN" ? "छवि का विवरण दर्ज करें:" : "Enter image description to generate:", "Cyberpunk futuristic laboratory");
+            if (prompt) {
+                runDirectTool('image', {prompt: prompt, kind: 'ai'});
+            }
+        }
+
+        function logTerminal(msg) {
+            const term = document.getElementById('terminalLog');
+            const now = new Date().toTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.innerText = `[${now}] ${msg}`;
+            term.appendChild(div);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // Hardware Telemetry
+        const waveContainer = document.getElementById('waveContainer');
+        for (let i = 0; i < 20; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'wave-bar';
+            waveContainer.appendChild(bar);
+        }
+
+        setInterval(() => {
+            const bars = document.querySelectorAll('.wave-bar');
+            bars.forEach(b => {
+                let maxH = 35;
+                if (isListening) maxH = 95;
+                else if (isSpeaking) maxH = 80;
+                b.style.height = (Math.floor(Math.random() * maxH) + 10) + '%';
+                if (isSpeaking) b.classList.add('speaking');
+                else b.classList.remove('speaking');
+            });
+        }, 110);
+
+        async function fetchTelemetry() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                if (data.status) {
+                    document.getElementById('clock').innerText = data.time;
+                    document.getElementById('cpuVal').innerText = data.cpu.percent + '%';
+                    document.getElementById('cpuFill').style.width = data.cpu.percent + '%';
+                    document.getElementById('memVal').innerText = data.memory.used_gb + ' / ' + data.memory.total_gb + ' GB';
+                    document.getElementById('memFill').style.width = data.memory.percent + '%';
+                    document.getElementById('diskVal').innerText = data.storage.percent + '%';
+                    document.getElementById('diskFill').style.width = data.storage.percent + '%';
+                    document.getElementById('batVal').innerText = data.power.percent + '%';
+                }
+            } catch(e) {}
+        }
+        setInterval(fetchTelemetry, 2500);
+        fetchTelemetry();
+
+        async function loadSubjects() {
+            try {
+                const res = await fetch('/api/study/subjects');
+                const data = await res.json();
+                const container = document.getElementById('subjectPills');
+                container.innerHTML = `<div class="subject-pill active" onclick="selectSubject('')">ALL</div>`;
+                data.subjects.forEach(sub => {
+                    const pill = document.createElement('div');
+                    pill.className = 'subject-pill';
+                    pill.innerText = sub.toUpperCase();
+                    pill.onclick = () => selectSubject(sub);
+                    container.appendChild(pill);
+                });
+                document.getElementById('subCount').innerText = `${data.subjects.length} SUBJECTS`;
+            } catch(e) {}
+        }
+
+        function selectSubject(sub) {
+            selectedSubject = sub;
+            document.querySelectorAll('.subject-pill').forEach(p => {
+                if ((!sub && p.innerText === 'ALL') || p.innerText.toLowerCase() === sub.toLowerCase()) {
+                    p.classList.add('active');
+                } else {
+                    p.classList.remove('active');
+                }
+            });
+            logTerminal(`Filter: ${sub ? sub.toUpperCase() : 'ALL'}`);
+        }
+
+        // Initialize Everything
+        applyLanguageStrings(currentLanguage);
+        loadChatHistory();
+        loadSubjects();
+    </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# --- Core (required) ---
+python-dotenv
+psutil              # system status: CPU, memory, disk, battery, processes
+requests            # web search + Ollama backend
+flask>=2.0          # web UI (ui/app.py)
+gunicorn            # production WSGI server (Render)
+
+# --- Voice (required for voice mode) ---
+pyttsx3             # offline text-to-speech (Windows SAPI5)
+SpeechRecognition   # speech-to-text (Google Web Speech, no key)
+PyAudio             # microphone capture for SpeechRecognition (Windows)
+
+# --- UI: optional ---
+# PySide6           # holographic HUD window
+
+# --- Safety: optional ---
+# send2trash        # send deleted files to the recycle bin instead of removing
+
+# --- AI backends: optional ---
+# openai            # cloud LLM backend (set AI_BACKEND=openai + OPENAI_API_KEY)
+#                   # local backend: run Ollama (set AI_BACKEND=ollama)
+
+# --- Tests ---
+# pytest            # optional; the suite also runs with `python -m unittest`

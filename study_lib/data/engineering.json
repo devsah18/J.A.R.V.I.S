@@ -1,0 +1,6 @@
+{
+    "Data Structures & Algorithms": "Arrays, Linked Lists, Trees, Graphs, Sorting algorithms (QuickSort O(n log n)), Dynamic Programming.",
+    "Ohm's Law & Circuit Analysis": "V = I * R. Kirchhoff's Laws (KCL, KVL) govern current and voltage across electrical networks.",
+    "Thermodynamics in Mechanical Eng": "First Law (Energy Conservation: dU = dQ - dW), Second Law (Entropy of an isolated system always increases)."
+}
+

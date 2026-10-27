@@ -1,0 +1,186 @@
+{
+  "NEET": {
+    "exam_name": "NEET (UG) - National Eligibility cum Entrance Test",
+    "pattern": "180 questions to attempt out of 200 (720 marks). 4 marks for correct, -1 for incorrect. Time: 3 hours 20 mins.",
+    "subjects": {
+      "Physics": {
+        "class_11": [
+          {"chapter": "Units and Measurements", "weightage": "2-3%", "high_yield": true, "topics": ["Dimensional analysis", "Significant figures", "Errors in measurement"]},
+          {"chapter": "Kinematics", "weightage": "4-5%", "high_yield": true, "topics": ["Motion in a straight line", "Motion in a plane", "Projectile motion", "Relative velocity"]},
+          {"chapter": "Laws of Motion", "weightage": "4-5%", "high_yield": true, "topics": ["Newton's laws", "Friction", "Circular motion dynamics", "Impulse & momentum conservation"]},
+          {"chapter": "Work, Energy and Power", "weightage": "4-5%", "high_yield": true, "topics": ["Work-energy theorem", "Conservative forces", "Elastic & inelastic collisions", "Power"]},
+          {"chapter": "Motion of System of Particles and Rigid Body", "weightage": "5-6%", "high_yield": true, "topics": ["Center of mass", "Moment of inertia", "Torque & angular momentum", "Rolling motion"]},
+          {"chapter": "Gravitation", "weightage": "3-4%", "high_yield": false, "topics": ["Kepler's laws", "Gravitational potential energy", "Escape velocity", "Orbital velocity of satellites"]},
+          {"chapter": "Mechanical Properties of Solids and Fluids", "weightage": "4-5%", "high_yield": true, "topics": ["Hooke's law, Young's modulus", "Pascal's law, Archimedes principle", "Bernoulli's theorem, Viscosity, Surface tension"]},
+          {"chapter": "Thermal Properties of Matter and Thermodynamics", "weightage": "6-7%", "high_yield": true, "topics": ["Heat transfer (conduction, convection, radiation)", "First & second laws of thermodynamics", "Carnot engine, specific heat capacities"]},
+          {"chapter": "Kinetic Theory of Gases", "weightage": "2-3%", "high_yield": false, "topics": ["Ideal gas equation", "RMS speed, Mean free path", "Degrees of freedom & equipartition of energy"]},
+          {"chapter": "Oscillations and Waves", "weightage": "5-6%", "high_yield": true, "topics": ["Simple Harmonic Motion (SHM)", "Time period of pendulum & spring", "Wave equation, Doppler effect, Standing waves & organ pipes"]}
+        ],
+        "class_12": [
+          {"chapter": "Electrostatics", "weightage": "6-7%", "high_yield": true, "topics": ["Coulomb's law, Electric field & dipole", "Gauss's law and applications", "Capacitance, energy in dielectric capacitors"]},
+          {"chapter": "Current Electricity", "weightage": "6-8%", "high_yield": true, "topics": ["Ohm's law, Drift velocity", "Kirchhoff's rules", "Wheatstone bridge, Potentiometer & Meter bridge"]},
+          {"chapter": "Magnetic Effects of Current and Magnetism", "weightage": "5-6%", "high_yield": true, "topics": ["Biot-Savart law, Ampere's law", "Lorentz force, Cyclotron, Moving coil galvanometer", "Earth magnetism, Dia/Para/Ferromagnetism"]},
+          {"chapter": "Electromagnetic Induction and Alternating Currents", "weightage": "5-6%", "high_yield": true, "topics": ["Faraday's & Lenz's laws", "Self & mutual inductance", "AC circuits (LCR series), Resonance, Transformer"]},
+          {"chapter": "Electromagnetic Waves", "weightage": "2-3%", "high_yield": false, "topics": ["Displacement current", "EM spectrum characteristics and applications"]},
+          {"chapter": "Optics (Ray and Wave)", "weightage": "9-10%", "high_yield": true, "topics": ["Total internal reflection, Lens maker's formula", "Prisms & optical instruments (microscope/telescope)", "Huygens principle, Young's double slit experiment (YDSE), Diffraction & Polarisation"]},
+          {"chapter": "Dual Nature of Matter and Radiation", "weightage": "4-5%", "high_yield": true, "topics": ["Photoelectric effect, Einstein's equation", "De Broglie wavelength"]},
+          {"chapter": "Atoms and Nuclei", "weightage": "5-6%", "high_yield": true, "topics": ["Bohr model of hydrogen atom, Spectral series", "Mass defect, Binding energy per nucleon, Radioactivity & Nuclear reactions"]},
+          {"chapter": "Semiconductor Electronics", "weightage": "6-7%", "high_yield": true, "topics": ["p-n junction diode, Rectifiers (Half/Full wave)", "Zener diode as voltage regulator", "Logic gates (AND, OR, NOT, NAND, NOR)"]}
+        ]
+      },
+      "Chemistry": {
+        "Physical_Chemistry": [
+          {"chapter": "Some Basic Concepts of Chemistry (Mole Concept)", "weightage": "3-4%", "high_yield": true, "topics": ["Mole concept, Stoichiometry", "Molarity, Molality, Normality", "Limiting reagent"]},
+          {"chapter": "Structure of Atom", "weightage": "3-4%", "high_yield": true, "topics": ["Bohr model, de Broglie relation", "Heisenberg uncertainty principle", "Quantum numbers & electronic configuration"]},
+          {"chapter": "Chemical Thermodynamics", "weightage": "4-5%", "high_yield": true, "topics": ["First & Second laws", "Enthalpy, Entropy, Gibbs free energy", "Spontaneity of reactions"]},
+          {"chapter": "Chemical and Ionic Equilibrium", "weightage": "6-7%", "high_yield": true, "topics": ["Le Chatelier's principle, Kp and Kc", "pH calculations, Buffer solutions", "Solubility product (Ksp) & Common ion effect"]},
+          {"chapter": "Redox Reactions & Electrochemistry", "weightage": "5-6%", "high_yield": true, "topics": ["Nernst equation, Cell potential (EMF)", "Kohlrausch's law, Faraday's laws of electrolysis"]},
+          {"chapter": "Solutions", "weightage": "4-5%", "high_yield": true, "topics": ["Raoult's law, Henry's law", "Colligative properties (Elevation in BP, Depression in FP, Osmotic pressure)", "Van't Hoff factor"]},
+          {"chapter": "Chemical Kinetics", "weightage": "4-5%", "high_yield": true, "topics": ["Rate law, Order & Molecularity", "Integrated rate equation for zero and first order", "Arrhenius equation & activation energy"]}
+        ],
+        "Inorganic_Chemistry": [
+          {"chapter": "Classification of Elements and Periodicity in Properties", "weightage": "3-4%", "high_yield": false, "topics": ["Ionization energy, Electron gain enthalpy", "Electronegativity, Atomic & Ionic radii trends"]},
+          {"chapter": "Chemical Bonding and Molecular Structure", "weightage": "6-7%", "high_yield": true, "topics": ["VSEPR theory, Hybridization", "Molecular Orbital Theory (MOT) & Bond order", "Hydrogen bonding, Dipole moment"]},
+          {"chapter": "p-Block Elements", "weightage": "5-6%", "high_yield": true, "topics": ["Group 13 to 18 trends and compounds", "Oxoacids of Phosphorus, Sulphur, and Halogens"]},
+          {"chapter": "d- and f-Block Elements", "weightage": "4-5%", "high_yield": true, "topics": ["Transition metals properties, oxidation states, magnetic properties", "Lanthanoid and Actinoid contraction, K2Cr2O7 and KMnO4"]},
+          {"chapter": "Coordination Compounds", "weightage": "5-6%", "high_yield": true, "topics": ["IUPAC nomenclature, Isomerism", "Werner's theory, Valence Bond Theory (VBT)", "Crystal Field Theory (CFT) and CFSE calculations"]}
+        ],
+        "Organic_Chemistry": [
+          {"chapter": "General Organic Chemistry (GOC)", "weightage": "6-7%", "high_yield": true, "topics": ["Inductive, Mesomeric, Hyperconjugation effects", "Carbocations, Carbanions, Free radicals stability", "Aromaticity (Huckel's rule), Isomerism"]},
+          {"chapter": "Hydrocarbons", "weightage": "4-5%", "high_yield": true, "topics": ["Alkanes, Alkenes (Markovnikov addition, ozonolysis)", "Alkynes, Aromatic electrophilic substitution"]},
+          {"chapter": "Haloalkanes and Haloarenes", "weightage": "3-4%", "high_yield": true, "topics": ["SN1 and SN2 reaction mechanisms", "Optical activity, Elimination vs substitution"]},
+          {"chapter": "Alcohols, Phenols and Ethers", "weightage": "5-6%", "high_yield": true, "topics": ["Reimer-Tiemann, Kolbe's reactions", "Lucas test, Williamson ether synthesis"]},
+          {"chapter": "Aldehydes, Ketones and Carboxylic Acids", "weightage": "6-7%", "high_yield": true, "topics": ["Nucleophilic addition reactions", "Aldol condensation, Cannizzaro reaction, Clemmensen/Wolff-Kishner", "HVZ reaction, Acidity of carboxylic acids"]},
+          {"chapter": "Amines and Diazonium Salts", "weightage": "4-5%", "high_yield": true, "topics": ["Basicity of aliphatic vs aromatic amines", "Hoffmann bromamide reaction, Carbylamine test, Diazotization & coupling"]},
+          {"chapter": "Biomolecules", "weightage": "4-5%", "high_yield": true, "topics": ["Carbohydrates classification, glucose & fructose", "Proteins (peptide linkage, primary/secondary structure)", "Nucleic acids (DNA/RNA), Vitamins & enzymes"]}
+        ]
+      },
+      "Biology": {
+        "Botany": [
+          {"chapter": "Diversity in Living World & Plant Kingdom", "weightage": "7-8%", "high_yield": true, "topics": ["Biological classification (Monera, Protista, Fungi)", "Algae, Bryophytes, Pteridophytes, Gymnosperms, Angiosperms life cycles"]},
+          {"chapter": "Morphology and Anatomy of Flowering Plants", "weightage": "7-8%", "high_yield": true, "topics": ["Root, stem, leaf modifications", "Inflorescence, flower, fruit & seed", "Simple and complex tissues, secondary growth"]},
+          {"chapter": "Cell: The Unit of Life and Cell Cycle", "weightage": "8-9%", "high_yield": true, "topics": ["Prokaryotic vs Eukaryotic cell organelles", "Mitosis and Meiosis phases and significance"]},
+          {"chapter": "Plant Physiology", "weightage": "10-12%", "high_yield": true, "topics": ["Photosynthesis in higher plants (C3, C4 pathways, Light reactions)", "Respiration in plants (Glycolysis, Krebs cycle, ETS)", "Plant growth and development (Auxins, Gibberellins, Cytokinins, ABA, Ethylene)"]},
+          {"chapter": "Sexual Reproduction in Flowering Plants", "weightage": "7-8%", "high_yield": true, "topics": ["Microsporogenesis & Megasporogenesis", "Pollination mechanisms, Outbreeding devices", "Double fertilization, Endosperm and embryo development"]},
+          {"chapter": "Genetics (Principles of Inheritance & Molecular Basis)", "weightage": "15-18%", "high_yield": true, "topics": ["Mendelian inheritance, Deviations (Incomplete dominance, Codominance)", "Sex determination, Genetic disorders (Pedigree analysis)", "DNA replication, Transcription, Genetic code, Translation, Lac Operon"]},
+          {"chapter": "Ecology and Environment", "weightage": "10-12%", "high_yield": true, "topics": ["Organisms and populations (Population interactions, Growth models)", "Ecosystem (Energy flow, Ecological pyramids)", "Biodiversity and conservation"]}
+        ],
+        "Zoology": [
+          {"chapter": "Animal Kingdom", "weightage": "7-8%", "high_yield": true, "topics": ["Non-chordates (Porifera to Echinodermata) and Chordates classification and diagnostic features"]},
+          {"chapter": "Structural Organisation in Animals", "weightage": "3-4%", "high_yield": false, "topics": ["Animal tissues (Epithelial, Connective, Muscular, Nervous)", "Cockroach anatomy and morphology"]},
+          {"chapter": "Human Physiology", "weightage": "18-20%", "high_yield": true, "topics": ["Breathing and exchange of gases", "Body fluids and circulation (Cardiac cycle, ECG, Blood groups)", "Excretory products and their elimination (Urine formation, Countercurrent mechanism)", "Locomotion and movement (Sliding filament theory)", "Neural control and coordination, Chemical coordination and integration (Endocrine glands and hormones)"]},
+          {"chapter": "Human Reproduction and Reproductive Health", "weightage": "8-9%", "high_yield": true, "topics": ["Male and female reproductive systems", "Gametogenesis (Spermatogenesis and Oogenesis)", "Menstrual cycle, Fertilization, Implantation, Embryonic development", "Contraception, Assisted Reproductive Technologies (IVF, ZIFT, GIFT)"]},
+          {"chapter": "Evolution", "weightage": "5-6%", "high_yield": true, "topics": ["Origin of life, Theories of evolution (Darwinism, Lamarckism)", "Hardy-Weinberg principle, Human evolution stages"]},
+          {"chapter": "Human Health and Diseases", "weightage": "6-7%", "high_yield": true, "topics": ["Common human diseases (Malaria, Typhoid, AIDS, Cancer)", "Innate and acquired immunity, Allergies, Autoimmunity, Drugs & alcohol abuse"]},
+          {"chapter": "Biotechnology: Principles and Applications", "weightage": "7-8%", "high_yield": true, "topics": ["Recombinant DNA technology (Restriction enzymes, PCR, Gel electrophoresis, Vectors)", "Bt cotton, RNA interference (RNAi), Gene therapy, Transgenic animals"]}
+        ]
+      }
+    }
+  },
+  "JEE": {
+    "exam_name": "JEE (Joint Entrance Examination) - Main & Advanced",
+    "pattern": "JEE Main: 90 questions (attempt 75). 300 marks. 4 for correct, -1 for wrong. Math (100) + Physics (100) + Chemistry (100).",
+    "subjects": {
+      "Physics": {
+        "high_yield_chapters": [
+          "Rotational Motion & System of Particles",
+          "Current Electricity & Electrical Instruments",
+          "Ray Optics & Optical Instruments",
+          "Thermodynamics & Heat Transfer",
+          "Electrostatics & Capacitors",
+          "Modern Physics (Photoelectric, Atoms & Nuclei)",
+          "Magnetic Effects of Current & EMI",
+          "Wave Motion & Sound Waves"
+        ],
+        "chapters": [
+          "Units, Dimensions & Errors", "Kinematics 1D and 2D", "Newton's Laws of Motion & Friction",
+          "Work, Energy and Power", "Center of Mass, Momentum Conservation & Collisions", "Rotational Dynamics & Rolling",
+          "Gravitation", "Fluid Mechanics & Elasticity", "Simple Harmonic Motion", "Waves & Sound",
+          "Thermal Properties, Heat Transfer & Thermodynamics", "Kinetic Theory of Gases",
+          "Electrostatics & Gauss Law", "Capacitance & Dielectrics", "Current Electricity & Circuits",
+          "Moving Charges & Magnetism", "Electromagnetic Induction & Inductance", "Alternating Current & Resonance",
+          "Electromagnetic Waves", "Geometrical Optics", "Wave Optics & Interference",
+          "Dual Nature of Matter & Photoelectric Effect", "Atomic Structure & X-rays", "Nuclear Physics & Radioactivity",
+          "Semiconductors & Logic Gates"
+        ]
+      },
+      "Chemistry": {
+        "high_yield_chapters": [
+          "Chemical Bonding & Molecular Structure",
+          "Coordination Compounds",
+          "General Organic Chemistry (GOC) & Reaction Mechanisms",
+          "Chemical Thermodynamics & Energetics",
+          "Chemical Kinetics",
+          "Electrochemistry & Solutions",
+          "Aldehydes, Ketones & Carboxylic Acids",
+          "p-Block Elements & d/f-Block Elements"
+        ],
+        "chapters": [
+          "Mole Concept & Redox Reactions", "Atomic Structure & Quantum Mechanics", "Chemical Bonding & VSEPR/MOT",
+          "Thermodynamics & Thermochemistry", "Chemical Equilibrium & Ionic Equilibrium", "Electrochemistry & Electrolysis",
+          "Chemical Kinetics & Catalysis", "Solutions & Colligative Properties", "Solid State & Surface Chemistry",
+          "Periodic Properties Trends", "Coordination Compounds & CFT/VBT", "d and f-Block Elements", "p-Block Elements",
+          "Metallurgy & Extraction", "General Organic Chemistry & Resonance", "Hydrocarbons & Isomerism",
+          "Haloalkanes & Haloarenes", "Alcohols, Phenols & Ethers", "Aldehydes, Ketones & Carboxylic Acids",
+          "Nitrogen Compounds & Amines", "Biomolecules & Polymers", "Practical Organic & Inorganic Chemistry"
+        ]
+      },
+      "Mathematics": {
+        "high_yield_chapters": [
+          "Definite Integrals & Area Under Curves",
+          "Differential Calculus (Derivatives & Applications)",
+          "Matrices and Determinants",
+          "Vectors and 3D Geometry",
+          "Coordinate Geometry (Circles, Conics - Parabola, Ellipse, Hyperbola)",
+          "Sequence and Series (AP, GP, HP)",
+          "Complex Numbers and Quadratic Equations",
+          "Probability and Statistics"
+        ],
+        "chapters": [
+          "Sets, Relations and Functions", "Complex Numbers and Quadratic Equations", "Matrices and Determinants",
+          "Permutations and Combinations", "Binomial Theorem and Its Applications", "Sequence and Series",
+          "Limits, Continuity and Differentiability", "Applications of Derivatives (Tangent, Normal, Maxima & Minima)",
+          "Indefinite and Definite Integrals", "Differential Equations", "Straight Lines and Pair of Straight Lines",
+          "Circles and System of Circles", "Parabola, Ellipse and Hyperbola", "Vector Algebra",
+          "Three Dimensional Geometry (Lines & Planes)", "Trigonometric Ratios, Identities and Equations",
+          "Inverse Trigonometric Functions", "Statistics and Probability", "Mathematical Reasoning"
+        ]
+      }
+    }
+  },
+  "CET": {
+    "exam_name": "MHT-CET / State Common Entrance Test",
+    "pattern": "200 marks. No negative marking! Mathematics: 50 Q (2 marks each = 100 marks). Physics + Chemistry: 100 Q (1 mark each = 100 marks). For PCB: Biology 100 Q (1 mark each = 100 marks).",
+    "subjects": {
+      "Physics": {
+        "high_yield_chapters": [
+          "Rotational Dynamics", "Mechanical Properties of Fluids", "Kinetic Theory & Thermodynamics",
+          "Current Electricity", "Magnetic Fields due to Electric Current", "Electromagnetic Induction & AC",
+          "Wave Optics", "Superposition of Waves", "Semiconductors & Logic Gates"
+        ]
+      },
+      "Chemistry": {
+        "high_yield_chapters": [
+          "Chemical Thermodynamics", "Solutions", "Electrochemistry", "Chemical Kinetics",
+          "Coordination Compounds", "Halogen Derivatives", "Alcohols, Phenols and Ethers",
+          "Aldehydes, Ketones and Carboxylic Acids", "Biomolecules"
+        ]
+      },
+      "Mathematics": {
+        "high_yield_chapters": [
+          "Mathematical Logic & Matrices", "Trigonometric Functions & Inverse Trig", "Vectors & 3D Geometry",
+          "Line and Plane", "Differentiation & Applications of Derivatives", "Definite Integration & Area Under Curve",
+          "Differential Equations", "Probability Distribution & Binomial Distribution"
+        ]
+      },
+      "Biology": {
+        "high_yield_chapters": [
+          "Inheritance and Variation", "Molecular Basis of Inheritance", "Control and Coordination",
+          "Respiration and Circulation", "Reproduction in Lower and Higher Plants", "Reproduction in Lower and Higher Animals",
+          "Biotechnology", "Ecosystems and Energy Flow"
+        ]
+      }
+    }
+  }
+}
+
