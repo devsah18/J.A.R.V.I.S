@@ -44,6 +44,29 @@ back to text instead of failing.
 | HUD | `--gui` | PySide6 window with transcript, push-to-talk, voice toggle. |
 | Auto | _(default)_ | HUD when PySide6 is installed, otherwise CLI. |
 
+### Web interface
+
+Install the project requirements, then start the Flask app:
+
+```bash
+python ui/app.py
+```
+
+Open `http://127.0.0.1:5000`. The dashboard supports assistant commands, the
+full tool catalog, subject based study questions, exam practice, chat history,
+browser speech input where the browser supports it, and browser speech output.
+Generated images are shown in the page. Web files are kept in a private folder
+for each browser session under `data/web_files/`.
+
+Set `FLASK_SECRET_KEY` to a long random value in deployment so browser sessions
+remain signed consistently across server restarts. The web app runs tools on its
+server: system readings describe the server, and the browser cannot launch or
+close applications on the visitor's device. Server microphone capture also
+requires a microphone attached to the server; browser speech input is preferred.
+Set `FLASK_COOKIE_SECURE=true` when serving over HTTPS. The profile code shown by
+the sign-in panel is a demo code, not email or phone verification. Use a real
+authentication provider before exposing a hosted instance to the public.
+
 In voice mode, after the wake word VARSHA keeps listening for follow-ups until
 you fall silent, so you do not have to repeat its name every time.
 

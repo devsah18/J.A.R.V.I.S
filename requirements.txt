@@ -8,6 +8,7 @@ gunicorn            # production WSGI server (Render)
 # --- Voice (required for desktop voice mode) ---
 pyttsx3             # offline text-to-speech (Windows SAPI5)
 SpeechRecognition   # speech-to-text (Google Web Speech, no key)
+gTTS                # web fallback voice output for Hindi and Marathi
 # PyAudio is only needed for desktop microphone capture and requires the
 # system portaudio.h library to compile. It is NOT needed by the web UI.
 # On Linux hosts (e.g. Render) install portaudio-dev or comment it out:

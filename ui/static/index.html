@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JARVIS // TACTICAL HUD & STUDY CORE</title>
+    <title>VARSHA // WEB ASSISTANT & STUDY CORE</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -145,6 +145,107 @@
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            background: rgba(4, 18, 30, 0.97);
+            border: 1px solid var(--cyan);
+            border-radius: 8px;
+            padding: 24px;
+            width: 460px;
+            max-width: 92vw;
+            max-height: 82vh;
+            overflow-y: auto;
+            box-shadow: 0 0 45px rgba(0, 242, 254, 0.35);
+            z-index: 6000;
+            display: none;
+            backdrop-filter: blur(12px);
+            animation: panelPop 0.25s ease;
+        }
+        @keyframes panelPop { from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+        .settings-panel h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.05rem;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 0 8px var(--cyan);
+            margin-bottom: 4px;
+            text-align: center;
+        }
+        .settings-panel .sub { font-size: 0.7rem; color: var(--text-dim); text-align: center; margin-bottom: 18px; letter-spacing: 1px; }
+        .settings-section { margin-bottom: 16px; }
+        .settings-section label {
+            display: block;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.68rem;
+            letter-spacing: 1.5px;
+            color: var(--cyan);
+            margin-bottom: 6px;
+        }
+        .settings-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .settings-row input[type="text"], .settings-row input[type="number"], .settings-row select {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 10px;
+            background: rgba(0, 242, 254, 0.06);
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            border-radius: 4px;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        .settings-row input:focus, .settings-row select:focus { border-color: var(--cyan); box-shadow: 0 0 10px var(--cyan-glow); }
+        .settings-btn {
+            padding: 8px 16px;
+            background: var(--cyan);
+            border: none;
+            border-radius: 4px;
+            color: #000;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .settings-btn:hover { background: #fff; box-shadow: 0 0 12px #fff; }
+        .settings-btn.ghost { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); }
+        .settings-btn.ghost:hover { background: var(--cyan-dim); color: #fff; }
+        .shortcut-chip {
+            display: inline-block;
+            padding: 3px 8px;
+            background: var(--cyan-dim);
+            border: 1px solid var(--cyan);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--cyan);
+            margin: 2px 4px 2px 0;
+        }
+        .settings-foot {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid var(--bg-card-border);
+        }
+
+        /* Responsive */
+        @media (max-width: 980px) {
+            #panelCore { left: 50% !important; top: 10px !important; transform: translateX(-50%); width: 94vw !important; height: 520px !important; }
+            #panelVitals, #panelStudy, #panelTools, #panelLog { display: none; }
+        }
+        @media (max-width: 560px) {
+            .brand-text h1 { font-size: 0.95rem; letter-spacing: 2px; }
+            .header-actions { gap: 6px; }
+            .header-actions > div:not(:first-child):not(:last-child) { display: none; }
+            .cmd-btn, .mic-btn { padding: 6px 8px; font-size: 0.65rem; }
         }
 
         /* Workspace Canvas where Panels live */
@@ -312,34 +413,73 @@
         }
 
         .chat-bubble {
-            padding: 8px 12px;
-            border-radius: 4px;
-            line-height: 1.4;
-            max-width: 90%;
+            padding: 10px 14px;
+            border-radius: 6px;
+            line-height: 1.5;
+            max-width: 92%;
             word-break: break-word;
+            position: relative;
+            animation: bubblePop 0.25s ease;
+            white-space: pre-wrap;
         }
+        @keyframes bubblePop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         .chat-bubble.user {
             align-self: flex-end;
-            background: rgba(0, 242, 254, 0.12);
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.18), rgba(0, 242, 254, 0.06));
             border: 1px solid var(--cyan);
             color: #fff;
+            border-bottom-right-radius: 2px;
         }
         .chat-bubble.ai {
             align-self: flex-start;
-            background: rgba(4, 25, 42, 0.85);
+            background: rgba(4, 25, 42, 0.9);
             border-left: 3px solid var(--cyan);
-            border-right: 1px solid rgba(0, 242, 254, 0.2);
-            border-top: 1px solid rgba(0, 242, 254, 0.2);
-            border-bottom: 1px solid rgba(0, 242, 254, 0.2);
+            border-top: 1px solid rgba(0, 242, 254, 0.15);
+            border-bottom: 1px solid rgba(0, 242, 254, 0.15);
             color: var(--text-main);
+            border-bottom-left-radius: 2px;
         }
         .chat-bubble .bubble-tag {
-            font-size: 0.65rem;
-            letter-spacing: 1px;
+            font-size: 0.62rem;
+            letter-spacing: 1.5px;
             color: var(--cyan);
-            margin-bottom: 4px;
+            margin-bottom: 5px;
             text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
+        .chat-bubble .bubble-tag::before {
+            content: "◆";
+            font-size: 0.5rem;
+        }
+        .chat-bubble .bubble-time {
+            font-size: 0.58rem;
+            color: var(--text-dim);
+            margin-top: 5px;
+            display: block;
+            text-align: right;
+            letter-spacing: 1px;
+        }
+        .typing-indicator {
+            align-self: flex-start;
+            background: rgba(4, 25, 42, 0.9);
+            border-left: 3px solid var(--cyan);
+            padding: 12px 16px;
+            border-radius: 6px;
+            display: flex;
+            gap: 4px;
+            border-bottom-left-radius: 2px;
+        }
+        .typing-indicator span {
+            width: 7px; height: 7px;
+            background: var(--cyan);
+            border-radius: 50%;
+            animation: typingBounce 1.2s infinite ease-in-out;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
 
         /* Command Bar */
         .cmd-bar {
@@ -502,13 +642,13 @@
     <!-- AUTHENTICATION OTP MODAL (Hidden by default unless requested) -->
     <div id="authModal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
-            <div class="modal-title" id="authTitle">SECURE ACCESS LINK</div>
-            <div class="modal-desc" id="authDesc">Enter your Email or Mobile Number to receive a secure OTP code.</div>
+            <div class="modal-title" id="authTitle">LOCAL PROFILE</div>
+            <div class="modal-desc" id="authDesc">Create a local profile. A demo verification code will appear here.</div>
 
             <!-- Step 1: Identifier Input -->
             <div id="authStep1">
                 <input type="text" id="authIdentifier" class="modal-input" placeholder="e.g. dev@domain.com or +919876543210">
-                <button class="modal-btn" onclick="requestOTP()">SEND OTP CODE</button>
+                <button class="modal-btn" onclick="requestOTP()">CREATE PROFILE</button>
                 <div style="text-align: center; margin-top: 10px;">
                     <a href="javascript:void(0)" onclick="closeAuthModal()" style="color: var(--text-dim); font-size: 0.75rem; text-decoration: none;">CONTINUE AS GUEST</a>
                 </div>
@@ -518,11 +658,62 @@
             <div id="authStep2" style="display: none;">
                 <input type="text" id="authOtpCode" class="modal-input" placeholder="Enter 6-Digit OTP" maxlength="6" style="text-align: center; letter-spacing: 4px; font-size: 1.1rem;">
                 <div id="demoOtpBadge" style="font-size: 0.75rem; color: var(--warning); margin-bottom: 10px; text-align: center;"></div>
-                <button class="modal-btn" onclick="verifyOTP()">VERIFY & SIGN IN</button>
+                <button class="modal-btn" onclick="verifyOTP()">VERIFY PROFILE</button>
                 <div style="text-align: center; margin-top: 10px;">
                     <a href="javascript:void(0)" onclick="backToStep1()" style="color: var(--text-dim); font-size: 0.75rem; text-decoration: none;">← CHANGE IDENTIFIER</a>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS PANEL -->
+    <div class="settings-panel" id="settingsPanel">
+        <h2>⚙️ SYSTEM SETTINGS</h2>
+        <div class="sub">Configure runtime behaviour &amp; shortcuts</div>
+
+        <div class="settings-section">
+            <label>ASSISTANT NAME</label>
+            <div class="settings-row">
+                <input type="text" id="cfgName" value="VARSHA" maxlength="24">
+                <button class="settings-btn" onclick="saveName()">RENAME</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <label>CONVERSATION TIMEOUT (seconds)</label>
+            <div class="settings-row">
+                <input type="number" id="cfgTimeout" value="30" min="5" max="120">
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <label>ENERGY THRESHOLD (mic sensitivity)</label>
+            <div class="settings-row">
+                <input type="number" id="cfgEnergy" value="150" min="50" max="400">
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <label>KEYBOARD SHORTCUTS</label>
+            <div>
+                <span class="shortcut-chip">Enter</span> <span style="font-size:0.72rem;color:var(--text-dim);">Send message</span><br>
+                <span class="shortcut-chip">Ctrl</span><span class="shortcut-chip">Enter</span> <span style="font-size:0.72rem;color:var(--text-dim);">Toggle voice input</span><br>
+                <span class="shortcut-chip">/</span> <span style="font-size:0.72rem;color:var(--text-dim);">Focus command bar</span><br>
+                <span class="shortcut-chip">Esc</span> <span style="font-size:0.72rem;color:var(--text-dim);">Close panels / modals</span>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <label>PANEL LAYOUT</label>
+            <div class="settings-row">
+                <button class="settings-btn ghost" onclick="resetLayout()">Reset Positions</button>
+                <button class="settings-btn ghost" onclick="toggleAllPanels()">Hide All</button>
+            </div>
+        </div>
+
+        <div class="settings-foot">
+            <span style="font-size:0.65rem;color:var(--text-dim);font-family:'JetBrains Mono';">v1.0.0 · VARSHA WEB CORE</span>
+            <button class="settings-btn ghost" onclick="closeSettings()">CLOSE</button>
         </div>
     </div>
 
@@ -531,7 +722,7 @@
         <div class="brand-zone">
             <div class="arc-mini"><div class="arc-mini-core"></div></div>
             <div class="brand-text">
-                <h1>JARVIS // VARSHA</h1>
+                <h1>VARSHA // WEB ASSISTANT</h1>
                 <p id="subTitleText">AUTONOMOUS INTELLIGENCE & STUDY CORE</p>
             </div>
         </div>
@@ -553,6 +744,7 @@
             </select>
 
             <button class="hud-btn-toggle" onclick="resetLayout()">🔄 RESET PANELS</button>
+            <button class="hud-btn-toggle" onclick="openSettings()">⚙️ SETTINGS</button>
             
             <!-- User Profile / Sign In Pill -->
             <div class="user-tag" id="userPill" onclick="openAuthModal()">
@@ -567,7 +759,7 @@
         <!-- PANEL 1: Tactical Holographic Core & Assistant (Moveable) -->
         <div class="hud-panel active-focus" id="panelCore" style="left: 310px; top: 10px; width: 580px; height: 600px;">
             <div class="panel-header" onmousedown="startDrag(event, 'panelCore')">
-                <span id="corePanelTitle">🤖 JARVIS // TACTICAL CORE</span>
+                <span id="corePanelTitle">🤖 VARSHA // WEB CORE</span>
                 <div class="controls">
                     <span style="font-size: 0.65rem; color: var(--cyan);" id="voiceStateBanner">VOICE READY</span>
                     <button class="win-ctrl-btn" onclick="toggleMinimize('panelCore')">_</button>
@@ -706,6 +898,8 @@
                     <div class="tool-card" onclick="runDirectTool('news', {topic: 'technology'})"><div class="icon">📰</div><div class="title" id="tlNews">NEWS</div></div>
                     <div class="tool-card" onclick="promptImageGen()"><div class="icon">🎨</div><div class="title" id="tlImg">IMAGE GEN</div></div>
                 </div>
+                <div style="font-size: 0.7rem; color: var(--text-dim); margin: 12px 0 6px;">ALL ASSISTANT TOOLS</div>
+                <div class="tools-grid" id="allToolCards"></div>
                 <div style="margin-top: 10px; font-size: 0.65rem; color: var(--text-dim); font-family: 'JetBrains Mono';" id="toolTipText">
                     Tip: Speak or type in Hindi or English to activate all capabilities.
                 </div>
@@ -723,7 +917,7 @@
             </div>
             <div class="panel-body">
                 <div id="terminalLog" style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 4px;">
-                    <div>[00:00:01] JARVIS HUD ONLINE</div>
+                    <div>[00:00:01] VARSHA WEB APP ONLINE</div>
                     <div>[00:00:02] SQLITE CHAT STORE MOUNTED</div>
                     <div>[00:00:03] UNIVERSAL HINDI ENGINE READY</div>
                 </div>
@@ -776,7 +970,7 @@
             document.getElementById("authStep2").style.display = "none";
             document.getElementById("authDesc").innerText = currentLanguage === "hi-IN" 
                 ? "OTP कोड प्राप्त करने के लिए अपना ईमेल या मोबाइल नंबर दर्ज करें।" 
-                : "Enter your Email or Mobile Number to receive a secure OTP code.";
+                : "Create a local profile. A demo verification code will appear here.";
         }
 
         let pendingIdentifier = "";
@@ -798,9 +992,9 @@
                 if (data.success) {
                     document.getElementById("authStep1").style.display = "none";
                     document.getElementById("authStep2").style.display = "block";
-                    document.getElementById("demoOtpBadge").innerText = `🔑 Verification Code: ${data.demo_otp} (Valid for 5 mins)`;
-                    logTerminal(`OTP transmitted to: ${pendingIdentifier}`);
-                }
+                    document.getElementById("demoOtpBadge").innerText = `DEMO CODE: ${data.demo_otp} (valid for 5 minutes)`;
+                    logTerminal(`Demo profile created for: ${pendingIdentifier}`);
+                } else alert(data.error || "Profile setup failed.");
             } catch(e) {
                 alert("Auth Error: " + e);
             }
@@ -823,12 +1017,12 @@
                     localStorage.setItem("jarvis_user_name", currentUserName);
                     updateAuthUI();
                     closeAuthModal();
-                    logTerminal(`User verified and signed in: [${currentUser}]`);
+                    logTerminal(`Local demo profile ready: [${currentUser}]`);
                     loadChatHistory();
                     if (currentLanguage === "hi-IN") {
                         speakResponse(`स्वागत है ${currentUserName}, आप सफलतापूर्वक साइन इन हो चुके हैं।`);
                     } else {
-                        speakResponse(`Welcome ${currentUserName}, session authenticated.`);
+                        speakResponse(`Welcome ${currentUserName}, your local profile is ready.`);
                     }
                 } else {
                     alert(data.error || "Invalid OTP code.");
@@ -856,7 +1050,7 @@
                         ? "जार्विस एआय सहाय्यक आणि सार्वत्रिक अभ्यास कोर ऑनलाइन आहे. सर्व पॅनेल ड्रॅग करता येतात. बोला किंवा टाइप करा!"
                         : currentLanguage === "hi-IN"
                         ? "जार्विस एआई सहायक और यूनिवर्सल स्टडी कोर ऑनलाइन है। सभी पैनल चलायमान (moveable) हैं। बोलकर या लिखकर अपना कोई भी सवाल पूछें!"
-                        : "JARVIS AI Assistant & Universal Study Protocol active. All panels are draggable and moveable. Click SPEAK or type to solve doubts or run commands.";
+                        : "VARSHA AI assistant and study tools are ready. All panels are draggable and moveable. Click SPEAK or type to solve doubts or run commands.";
                     renderBubble("ai", welcome, "SYSTEM INITIALIZATION", false);
                 }
                 feed.scrollTop = feed.scrollHeight;
@@ -891,9 +1085,69 @@
             const textEl = document.createElement('div');
             textEl.innerText = text;
             bubble.appendChild(textEl);
+            const timeEl = document.createElement('span');
+            timeEl.className = 'bubble-time';
+            const d = new Date();
+            timeEl.textContent = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            bubble.appendChild(timeEl);
             feed.appendChild(bubble);
             if (scroll) feed.scrollTop = feed.scrollHeight;
         }
+
+        // ==========================================
+        // SETTINGS PANEL
+        // ==========================================
+        function openSettings() {
+            document.getElementById('cfgName').value = localStorage.getItem('jarvis_assistant_name') || 'VARSHA';
+            document.getElementById('cfgTimeout').value = localStorage.getItem('jarvis_timeout') || 30;
+            document.getElementById('cfgEnergy').value = localStorage.getItem('jarvis_energy') || 150;
+            document.getElementById('settingsPanel').style.display = 'block';
+        }
+        function closeSettings() {
+            document.getElementById('settingsPanel').style.display = 'none';
+        }
+        function saveName() {
+            const name = (document.getElementById('cfgName').value || '').trim();
+            if (!name) return;
+            localStorage.setItem('jarvis_assistant_name', name);
+            document.querySelector('.brand-text h1').innerText = `${name.toUpperCase()} // WEB ASSISTANT`;
+            logTerminal(`Assistant renamed to: [${name}]`);
+        }
+
+        function toggleAllPanels() {
+            ['panelVitals','panelStudy','panelTools','panelLog'].forEach(id => {
+                const p = document.getElementById(id);
+                p.style.display = p.style.display === 'none' ? '' : 'none';
+            });
+        }
+
+        // ==========================================
+        // KEYBOARD SHORTCUTS
+        // ==========================================
+        document.addEventListener('keydown', (e) => {
+            const tag = (e.target.tagName || '').toLowerCase();
+            const inInput = tag === 'input' || tag === 'textarea' || tag === 'select';
+            if (e.key === 'Escape') {
+                closeSettings();
+                closeAuthModal();
+                return;
+            }
+            if (inInput && e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                executeCommand();
+                return;
+            }
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                toggleVoiceInput();
+                return;
+            }
+            if (!inInput && e.key === '/') {
+                e.preventDefault();
+                document.getElementById('userInput').focus();
+                return;
+            }
+        });
 
         // ==========================================
         // 100% UNIVERSAL HINDI LOCALIZATION
@@ -909,7 +1163,7 @@
             // Subtitle
             document.getElementById("subTitleText").innerText = isMr ? "स्वायत्त बुद्धिमत्ता आणि अभ्यास कोर" : isHi ? "स्वायत्त बुद्धिमत्ता और संपूर्ण अध्ययन कोर" : "AUTONOMOUS INTELLIGENCE & STUDY CORE";
             // Panel titles
-            document.getElementById("corePanelTitle").innerText = isMr ? "🤖 जार्विस // मुख्य कोर" : isHi ? "🤖 जार्विस // मुख्य कोर" : "🤖 JARVIS // TACTICAL CORE";
+            document.getElementById("corePanelTitle").innerText = isMr ? "🤖 जार्विस // मुख्य कोर" : isHi ? "🤖 जार्विस // मुख्य कोर" : "🤖 VARSHA // WEB CORE";
             document.getElementById("vitalsTitle").innerText = isMr ? "सिस्टम // हार्डवेअर स्थिती" : isHi ? "सिस्टम // हार्डवेयर स्थिति" : "SYSTEM // VITALS";
             document.getElementById("studyPanelTitle").innerText = isMr ? "📚 अभ्यास मॅट्रिक्स" : isHi ? "📚 अध्ययन ज्ञान मैट्रिक्स" : "📚 STUDY MATRIX";
             document.getElementById("toolsPanelTitle").innerText = isMr ? "🛠️ साधन लाँचर" : isHi ? "🛠️ उपकरण लॉन्चर" : "🛠️ TOOL LAUNCHER";
@@ -1067,9 +1321,7 @@
 
             speechRecognition.onerror = (e) => {
                 setListeningState(false);
-                if (e.error === 'network' || e.error === 'not-allowed') {
-                    listenViaPyAudio();
-                }
+                logTerminal(`Browser speech input unavailable: ${e.error}. Type your command or use a browser that supports speech recognition.`);
             };
 
             speechRecognition.onend = () => setListeningState(false);
@@ -1247,37 +1499,48 @@
             const val = input.value.trim();
             if (!val) return;
             input.value = '';
-
-            const tag = currentLanguage === "mr-IN" ? "वापरकर्ता // मराठी" : currentLanguage === "hi-IN" ? "उपयोगकर्ता // हिन्दी" : "OPERATOR";
+            const tag = currentLanguage === "mr-IN" ? "USER // MARATHI" : currentLanguage === "hi-IN" ? "USER // HINDI" : "OPERATOR";
             renderBubble('user', val, tag);
             logTerminal(`Query: "${val.substring(0, 25)}..."`);
 
-            if (selectedSubject) {
-                try {
-                    const res = await fetch('/api/study/ask', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({question: val, subject: selectedSubject, lang: currentLanguage, user: currentUser})
-                    });
-                    const data = await res.json();
-                    renderBubble('ai', data.answer, isNonEnglish() ? `${data.source} // ${currentLanguage === 'mr-IN' ? 'मराठी' : 'हिन्दी'}` : `${data.source} // ${data.subject || 'GENERAL'}`);
-                    speakResponse(data.answer);
-                    return;
-                } catch(e) {}
-            }
+            // Show typing indicator while waiting for the backend
+            const typingEl = document.createElement('div');
+            typingEl.className = 'typing-indicator';
+            typingEl.innerHTML = '<span></span><span></span><span></span>';
+            const feed = document.getElementById('feedContainer');
+            feed.appendChild(typingEl);
+            feed.scrollTop = feed.scrollHeight;
 
             try {
-                const res = await fetch('/api/command', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                let res;
+                if (selectedSubject) {
+                    res = await fetch('/api/study/ask', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({question: val, subject: selectedSubject, lang: currentLanguage, user: currentUser})
+                    });
+                    const study = await res.json();
+                    typingEl.remove();
+                    if (!res.ok) throw new Error(study.error || 'Study request failed.');
+                    renderBubble('ai', study.answer || 'No answer returned.', `${study.source || 'STUDY'} // ${study.subject || 'GENERAL'}`);
+                    speakResponse(study.answer || '');
+                    return;
+                }
+                res = await fetch('/api/command', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({command: val, lang: currentLanguage, user: currentUser})
                 });
-                const data = await res.json();
-                const reply = data.response || "No response received.";
-                renderBubble('ai', reply, currentLanguage === 'mr-IN' ? "जार्विस // मराठी" : currentLanguage === 'hi-IN' ? "जार्विस // हिन्दी" : "JARVIS RESPONSE");
+                let data = await res.json();
+                typingEl.remove();
+                if (data.confirmation_required) data = await confirmAndRun(data);
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Command failed.');
+                const reply = data.response || data.output || 'No response received.';
+                renderBubble('ai', reply, 'VARSHA RESPONSE');
+                if (data.data && data.data.image_url) appendToolImage(data.data.image_url);
+                if (data.data && data.data.url && data.tool === 'browser') appendToolLink(data.data.url);
                 speakResponse(reply);
             } catch (e) {
-                renderBubble('ai', 'Error: ' + e, 'ERROR');
+                typingEl.remove();
+                renderBubble('ai', `Error: ${e.message || e}`, 'ERROR');
             }
         }
 
@@ -1303,16 +1566,73 @@
             logTerminal(`Tool: [${toolName.toUpperCase()}]`);
             try {
                 const res = await fetch('/api/tool/execute', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({tool: toolName, lang: currentLanguage, ...params})
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({tool: toolName, lang: currentLanguage, user: currentUser, ...params})
                 });
+                let data = await res.json();
+                if (data.confirmation_required) data = await confirmAndRun(data);
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Tool failed.');
+                const output = data.output || 'The tool completed without a message.';
+                renderBubble('ai', output, `TOOL // ${toolName.toUpperCase()}`);
+                if (data.data && data.data.image_url) appendToolImage(data.data.image_url);
+                if (data.data && data.data.url && toolName === 'browser') appendToolLink(data.data.url);
+                speakResponse(output);
+            } catch (e) { renderBubble('ai', `Tool error: ${e.message || e}`, 'ERROR'); }
+        }
+
+        async function confirmAndRun(pending) {
+            const approved = window.confirm(pending.prompt || 'Allow this action?');
+            const res = await fetch('/api/confirm', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({token: pending.confirmation_token, user: currentUser, approved, lang: currentLanguage})
+            });
+            const data = await res.json();
+            if (!res.ok) return {success: false, error: data.error || 'Confirmation failed.'};
+            return data;
+        }
+
+        function appendToolImage(url) {
+            const img = document.createElement('img');
+            img.src = url; img.alt = 'Generated image';
+            img.style.cssText = 'max-width:100%;max-height:280px;border:1px solid var(--cyan);border-radius:4px;margin:8px 0;align-self:flex-start';
+            const feed = document.getElementById('feedContainer');
+            feed.appendChild(img); feed.scrollTop = feed.scrollHeight;
+        }
+
+        function appendToolLink(url) {
+            const link = document.createElement('a');
+            link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+            link.textContent = `Open ${url}`;
+            link.style.cssText = 'color:var(--cyan);margin:6px 0;word-break:break-all';
+            document.getElementById('feedContainer').appendChild(link);
+        }
+
+        async function runToolFromCatalog(tool) {
+            const params = {};
+            for (const spec of (tool.parameters || [])) {
+                const value = window.prompt(`${tool.name}: ${spec.name}\n${spec.description}`, '');
+                if (value === null) return;
+                if (value !== '' || spec.required) params[spec.name] = value;
+            }
+            await runDirectTool(tool.name, params);
+        }
+
+        async function loadTools() {
+            const container = document.getElementById('allToolCards');
+            try {
+                const res = await fetch('/api/tools');
                 const data = await res.json();
-                if (data.output) {
-                    renderBubble('ai', data.output, `TOOL // ${toolName.toUpperCase()}`);
-                    speakResponse(data.output);
+                container.replaceChildren();
+                for (const tool of (data.tools || [])) {
+                    const card = document.createElement('button');
+                    card.type = 'button'; card.className = 'tool-card';
+                    card.innerHTML = '<div class="icon">TOOL</div><div class="title"></div>';
+                    card.querySelector('.title').textContent = tool.name.toUpperCase();
+                    card.title = tool.description;
+                    card.onclick = () => runToolFromCatalog(tool);
+                    container.appendChild(card);
                 }
-            } catch(e) {}
+            } catch (e) { logTerminal(`Tool catalog unavailable: ${e}`); }
         }
 
         function promptImageGen() {
@@ -1403,6 +1723,7 @@
         applyLanguageStrings(currentLanguage);
         loadChatHistory();
         loadSubjects();
+        loadTools();
     </script>
 </body>
 </html>

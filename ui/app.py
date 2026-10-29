@@ -2,13 +2,16 @@ import json
 import os
 import sys
 import time
-import random
 import sqlite3
 import urllib.request
 import urllib.parse
 import base64
 import io
 import re
+import secrets
+import threading
+import uuid
+from pathlib import Path
 import psutil
 
 # Ensure project root is in sys.path
@@ -16,7 +19,13 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, session
+from core.router import ActionRequest
+from core.memory import Memory
+from memory.database import Database
+from tools.files import FilesTool
+from tools.base import Risk, ToolResult
+from tools.image import ImageTool
 
 try:
     from study_lib.knowledge import KB, KnowledgeBase
@@ -41,6 +50,25 @@ except Exception:
     sr = None
 
 app = Flask(__name__, static_folder="static")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("FLASK_COOKIE_SECURE", "").strip().lower() in {"1", "true", "yes", "on"},
+)
+
+
+@app.before_request
+def _ensure_web_session():
+    session.permanent = True
+    session.setdefault("web_user_id", uuid.uuid4().hex)
+
+
+def _current_web_user():
+    try:
+        return session.get("web_user_id", "guest")
+    except RuntimeError:
+        return "guest"
 
 # Database Path
 DB_PATH = os.path.join(PROJECT_ROOT, "data", "jarvis_web.db")
@@ -134,18 +162,156 @@ def _get_stt():
     return stt_engine
 
 # Lazy initialization of assistant
-_assistant_instance = None
+_assistant_instances = {}
+_assistant_lock = threading.RLock()
+_pending_web_actions = {}
+_pending_web_actions_lock = threading.Lock()
+WEB_FILES_DIR = os.path.join(PROJECT_ROOT, "data", "web_files")
+os.makedirs(WEB_FILES_DIR, exist_ok=True)
+
+
+class WebFilesTool(FilesTool):
+    """Files tool limited to the web app's own workspace."""
+
+    description = "Manage files in your private web workspace only."
+
+    def run(self, action="", path="", content=None, destination="", pattern="*", **kwargs):
+        user_root = os.path.join(WEB_FILES_DIR, _current_web_user())
+        os.makedirs(user_root, exist_ok=True)
+        root = os.path.realpath(user_root)
+
+        def inside_root(value):
+            expanded = os.path.expandvars(os.path.expanduser(value or "."))
+            candidate = os.path.realpath(expanded if os.path.isabs(expanded) else os.path.join(root, expanded))
+            try:
+                return os.path.commonpath((root, candidate)) == root, candidate
+            except ValueError:
+                return False, candidate
+
+        safe_path, target = inside_root(path)
+        safe_destination, dest = inside_root(destination) if destination else (True, "")
+        if not safe_path or not safe_destination:
+            return ToolResult.failure("Web file access is limited to your private web workspace. Use a relative path inside that folder.")
+        return super().run(action=action, path=target, content=content,
+                           destination=dest, pattern=pattern, **kwargs)
 
 def get_assistant():
-    global _assistant_instance
-    if _assistant_instance is None:
+    user = _current_web_user()
+    with _assistant_lock:
+        if user not in _assistant_instances:
+            try:
+                from core.assistant import Assistant
+                memory_path = os.path.join(PROJECT_ROOT, "data", "web_memory", f"{user}.db")
+                assistant = Assistant(memory=Memory(Database(memory_path)))
+                assistant.router.register(WebFilesTool())
+                assistant.router.register(ImageTool(output_dir=Path(WEB_FILES_DIR) / user / "images"))
+                if hasattr(assistant.engine, "set_tool_schemas"):
+                    assistant.engine.set_tool_schemas(assistant.router.schemas())
+                _assistant_instances[user] = assistant
+            except Exception as e:
+                print(f"[app.py] Warning: Could not instantiate Assistant: {e}")
+                return None
+        return _assistant_instances[user]
+
+
+def _web_execute(action, user, assistant=None):
+    """Run a tool through the assistant router, requiring browser approval for changes."""
+    command_origin = assistant is not None
+    assistant = assistant or get_assistant()
+    if assistant is None:
+        return {"success": False, "error": "Assistant is unavailable."}, 503
+    tool = assistant.router.get(action.tool)
+    if tool is None:
+        return {"success": False, "error": f"Unknown tool: {action.tool}"}, 404
+    # A website can open a URL in the visitor's browser, but webbrowser.open()
+    # on the server cannot control the visitor's desktop.
+    if action.tool == "browser":
+        target = assistant.browser_tool._normalize(action.params.get("url", ""))
+        if not target:
+            return {"success": False, "error": "I need a website or URL to open."}, 200
+        if urllib.parse.urlsplit(target).scheme.lower() not in {"http", "https", "mailto"}:
+            return {"success": False, "error": "Web links must use HTTP, HTTPS, or mailto."}, 200
+        return {"success": True, "output": f"Opening {target}.", "tool": "browser", "data": {"url": target}}, 200
+    if action.tool == "apps":
+        return {
+            "success": False,
+            "error": "A web page cannot launch or close applications on your device. Use the desktop assistant for app control.",
+        }, 200
+    risk = tool.risk_for(**action.params)
+    summary = assistant.router._summarise(tool, action.params)
+    if risk is not Risk.LOW:
+        token = uuid.uuid4().hex
+        with _pending_web_actions_lock:
+            _pending_web_actions[token] = {
+                "action": action,
+                "user": user,
+                "assistant": assistant,
+                "command": command_origin,
+                "expires": time.time() + 180,
+            }
+        return {
+            "success": True,
+            "confirmation_required": True,
+            "confirmation_token": token,
+            "prompt": f"Allow {action.tool} to {summary}?",
+        }, 200
+    with _assistant_lock:
+        outcome = assistant.router.dispatch(action)
+    result_data = outcome.result.data if outcome.result else {}
+    if action.tool == "image" and result_data.get("path"):
+        result_data = dict(result_data)
+        result_data["image_url"] = f"/api/images/{os.path.basename(result_data['path'])}"
+    return {
+        "success": outcome.ok,
+        "output": outcome.spoken,
+        "tool": outcome.tool,
+        "data": result_data,
+    }, 200
+
+
+def _web_confirm(token, user, approved, lang="en-US"):
+    with _pending_web_actions_lock:
+        pending = _pending_web_actions.pop(token, None)
+    if pending is None or pending["expires"] < time.time() or pending["user"] != user:
+        return {"success": False, "error": "This confirmation has expired. Please try again."}, 410
+    if not approved:
+        message = "Action cancelled."
+        if lang in ("hi-IN", "mr-IN"):
+            message = translate_text(message, source="en", target="hi" if lang == "hi-IN" else "mr")
+        if pending.get("command"):
+            assistant = pending["assistant"]
+            assistant.context.add_assistant(message)
+            assistant.memory.log("assistant", message)
+            save_chat_turn(user, "ai", message, "VARSHA RESPONSE")
+        return {"success": True, "output": message}, 200
+    assistant = pending["assistant"]
+    with _assistant_lock:
+        assistant.permissions.set_confirmer(lambda _prompt: True)
         try:
-            from core.assistant import Assistant
-            _assistant_instance = Assistant()
-        except Exception as e:
-            print(f"[app.py] Warning: Could not instantiate Assistant: {e}")
-            _assistant_instance = None
-    return _assistant_instance
+            outcome = assistant.router.dispatch(pending["action"])
+        finally:
+            assistant.permissions.set_confirmer(None)
+    output = outcome.spoken
+    if lang in ("hi-IN", "mr-IN") and not re.search(r"[\u0900-\u097F]", output):
+        output = translate_text(output, source="en", target="hi" if lang == "hi-IN" else "mr")
+    result_data = outcome.result.data if outcome.result else {}
+    if pending["action"].tool == "image" and result_data.get("path"):
+        result_data = dict(result_data)
+        result_data["image_url"] = f"/api/images/{os.path.basename(result_data['path'])}"
+    result = {
+        "success": outcome.ok,
+        "output": output,
+        "tool": outcome.tool,
+        "data": result_data,
+    }
+    if pending.get("command"):
+        if outcome.ok:
+            assistant.context.add_tool(outcome.tool, outcome.spoken)
+            assistant._note_context(pending["action"])
+        assistant.context.add_assistant(output)
+        assistant.memory.log("assistant", output)
+        save_chat_turn(user, "ai", output, "VARSHA RESPONSE")
+    return result, 200
 
 qa_engine = None
 if QAEngine is not None:
@@ -171,17 +337,13 @@ def send_otp():
     if not identifier:
         return jsonify({"success": False, "error": "Identifier required"}), 400
 
-    otp = str(random.randint(100000, 999999))
+    otp = str(secrets.randbelow(900000) + 100000)
     _OTP_STORE[identifier] = {
         "otp": otp,
         "expires": time.time() + 300  # 5 minutes validity
     }
 
-    print("=" * 50)
-    print(f" [AUTH VERIFICATION] OTP for {identifier}: {otp}")
-    print("=" * 50)
-
-    # In production this connects to SMTP/Twilio. For local desktop assistant we return it directly for instant login.
+    # This is a local demo profile flow; real email/SMS delivery needs a provider.
     return jsonify({
         "success": True,
         "message": f"Verification code generated for {identifier}",
@@ -201,7 +363,7 @@ def verify_otp():
     if time.time() > entry["expires"]:
         return jsonify({"success": False, "error": "OTP has expired. Please request a new one."}), 400
 
-    if entry["otp"] != otp and otp != "123456":  # Allow master bypass for dev convenience
+    if entry["otp"] != otp:
         return jsonify({"success": False, "error": "Invalid verification code."}), 400
 
     # Save user into DB
@@ -223,7 +385,7 @@ def verify_otp():
 # ==========================================
 @app.route("/api/history", methods=["GET"])
 def get_chat_history():
-    user = request.args.get("user", "default").strip().lower()
+    user = _current_web_user()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
@@ -237,7 +399,7 @@ def get_chat_history():
 @app.route("/api/history/clear", methods=["POST"])
 def clear_chat_history():
     data = request.get_json(force=True) or {}
-    user = data.get("user", "default").strip().lower()
+    user = _current_web_user()
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("DELETE FROM chat_history WHERE user_identifier = ?", (user,))
@@ -247,6 +409,7 @@ def clear_chat_history():
 
 def save_chat_turn(user: str, sender: str, message: str, tag: str = ""):
     try:
+        user = _current_web_user()
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("INSERT INTO chat_history (user_identifier, sender, message, tag) VALUES (?, ?, ?, ?)",
@@ -264,7 +427,7 @@ def system_status():
     try:
         cpu_pct = psutil.cpu_percent(interval=None)
         mem = psutil.virtual_memory()
-        disk = psutil.disk_usage("/")
+        disk = psutil.disk_usage(PROJECT_ROOT)
         net = psutil.net_io_counters()
         battery = psutil.sensors_battery()
         bat_pct = battery.percent if battery else 100
@@ -290,8 +453,11 @@ def system_status():
 @app.route("/api/voice/listen", methods=["POST"])
 def voice_listen():
     data = request.get_json(silent=True) or {}
-    timeout = data.get("timeout", 6)
-    phrase_limit = data.get("phrase_time_limit", 10)
+    try:
+        timeout = max(1, min(int(data.get("timeout", 6)), 15))
+        phrase_limit = max(1, min(int(data.get("phrase_time_limit", 10)), 20))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "status": "error", "text": "", "error": "Invalid listen duration."}), 400
     device_override = data.get("device_index", None)
     lang = data.get("lang", "en-US")
 
@@ -371,7 +537,7 @@ def execute_command():
     data = request.get_json(force=True) or {}
     command_text = data.get("command", "").strip()
     lang = data.get("lang", "en-US")
-    user = data.get("user", "default")
+    user = _current_web_user()
     is_hindi_mode = (lang == "hi-IN" or is_hindi_text(command_text))
 
     if not command_text:
@@ -380,44 +546,52 @@ def execute_command():
     save_chat_turn(user, "user", command_text, "OPERATOR // HINDI" if is_hindi_mode else "OPERATOR")
 
     asst = get_assistant()
-    reply = ""
-    if asst:
-        try:
-            # If user spoke/typed in Hindi, translate to English for internal tool routing if needed
-            internal_cmd = command_text
-            if is_hindi_mode and re.search(r"[\u0900-\u097F]", command_text):
-                # Try direct handle first; if unknown, translate query to English
-                initial_resp = asst.handle(command_text, speak=False)
-                if "I'm not sure" in initial_resp or "not sure what" in initial_resp:
-                    translated_cmd = translate_text(command_text, source="hi", target="en")
-                    reply = asst.handle(translated_cmd, speak=False)
-                else:
-                    reply = initial_resp
+    if asst is None:
+        return jsonify({"success": False, "error": "Assistant is unavailable."}), 503
+    try:
+        internal_cmd = command_text
+        if is_hindi_mode and re.search(r"[\u0900-\u097F]", command_text):
+            source_lang = "mr" if lang == "mr-IN" else "hi"
+            internal_cmd = translate_text(command_text, source=source_lang, target="en")
+
+        with _assistant_lock:
+            asst.context.add_user(internal_cmd)
+            asst.memory.log("user", internal_cmd)
+            response = asst.engine.respond(internal_cmd, asst.context)
+            tool_result = {}
+            if response.has_action:
+                result, status = _web_execute(response.action, user, asst)
+                if result.get("confirmation_required"):
+                    if is_hindi_mode:
+                        result["prompt"] = translate_text(result["prompt"], source="en", target="mr" if lang == "mr-IN" else "hi")
+                    result["is_hindi"] = is_hindi_mode
+                    return jsonify(result), status
+                tool_result = result
+                reply = result.get("output") or result.get("error", "The action failed.")
+                if result.get("success") and result.get("tool"):
+                    asst.context.add_tool(result["tool"], reply)
+                    asst._note_context(response.action)
             else:
-                reply = asst.handle(internal_cmd, speak=False)
-
-            # If Hindi mode is active, guarantee the reply is 100% in Hindi
+                reply = response.speech or ""
             if is_hindi_mode and not re.search(r"[\u0900-\u097F]", reply):
-                reply = translate_text(reply, source="en", target="hi")
+                reply = translate_text(reply, source="en", target="mr" if lang == "mr-IN" else "hi")
+            asst.context.add_assistant(reply)
+            asst.memory.log("assistant", reply)
+    except Exception as e:
+        app.logger.exception("Command failed")
+        return jsonify({"success": False, "error": str(e)}), 500
 
-        except Exception as e:
-            reply = f"System error executing command: {e}" if not is_hindi_mode else f"कमांड निष्पादित करने में त्रुटि: {e}"
-    else:
-        reply = f"Processed: '{command_text}'"
-
-    save_chat_turn(user, "ai", reply, "JARVIS // हिन्दी" if is_hindi_mode else "JARVIS RESPONSE")
-
-    return jsonify({
-        "success": True,
-        "response": reply,
-        "is_hindi": is_hindi_mode
-    })
+    save_chat_turn(user, "ai", reply, "VARSHA RESPONSE")
+    return jsonify({"success": True, "response": reply, "is_hindi": is_hindi_mode,
+                    "tool": tool_result.get("tool"), "data": tool_result.get("data", {})})
 
 # ==========================================
 # STUDY & DOUBT SOLVER (WITH HINDI SUPPORT)
 # ==========================================
 @app.route("/api/study/subjects", methods=["GET"])
 def study_subjects():
+    if KB is None:
+        return jsonify({"subjects": [], "error": "Study knowledge files are unavailable."}), 503
     KB._load_all()
     subjects = KB.subjects()
     data_summary = {s: len(KB._db.get(s, {})) for s in subjects}
@@ -429,7 +603,7 @@ def study_ask():
     question = data.get("question", "").strip()
     subject = data.get("subject", "").strip() or None
     lang = data.get("lang", "en-US")
-    user = data.get("user", "default")
+    user = _current_web_user()
     is_hindi_mode = (lang == "hi-IN" or is_hindi_text(question))
 
     if not question:
@@ -437,10 +611,12 @@ def study_ask():
 
     save_chat_turn(user, "user", question, "DOUBT // HINDI" if is_hindi_mode else "DOUBT")
 
+    if KB is None:
+        return jsonify({"error": "Study knowledge files are unavailable."}), 503
     KB._load_all()
     search_q = question
     if is_hindi_mode:
-        search_q = translate_text(question, source="hi", target="en")
+        search_q = translate_text(question, source="mr" if lang == "mr-IN" else "hi", target="en")
 
     local_hit = None
     if subject:
@@ -479,7 +655,7 @@ def study_ask():
             ans_source = "NOT_FOUND"
 
     if is_hindi_mode and not re.search(r"[\u0900-\u097F]", ans_text):
-        ans_text = translate_text(ans_text, source="en", target="hi")
+        ans_text = translate_text(ans_text, source="en", target="mr" if lang == "mr-IN" else "hi")
 
     save_chat_turn(user, "ai", ans_text, f"{ans_source} // हिन्दी" if is_hindi_mode else f"{ans_source} // {ans_subject}")
 
@@ -501,60 +677,58 @@ def exam_quiz():
         lang = request.args.get("lang", "en-US")
         res = tool.run(action="quiz", exam=exam_type, subject=subject)
         out = res.spoken
-        if lang == "hi-IN":
-            out = translate_text(out, source="en", target="hi")
+        if lang in ("hi-IN", "mr-IN"):
+            out = translate_text(out, source="en", target="hi" if lang == "hi-IN" else "mr")
         return jsonify({"output": out, "raw": res.data})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/tools", methods=["GET"])
+def list_tools():
+    assistant = get_assistant()
+    if assistant is None:
+        return jsonify({"tools": []}), 503
+    tools = [schema for schema in assistant.router.schemas() if schema["name"] != "apps"]
+    return jsonify({"tools": tools})
+
+
 @app.route("/api/tool/execute", methods=["POST"])
 def execute_tool_direct():
-    data = request.get_json(force=True) or {}
-    tool_name = data.get("tool", "").lower()
-    lang = data.get("lang", "en-US")
-    asst = get_assistant()
-    if not asst:
-        return jsonify({"success": False, "error": "Assistant offline"}), 500
+    data = request.get_json(silent=True) or {}
+    tool_name = str(data.get("tool", "")).strip().lower()
+    user = _current_web_user()
+    if not tool_name:
+        return jsonify({"success": False, "error": "Tool name is required."}), 400
+    params = {key: value for key, value in data.items() if key not in {"tool", "lang", "user"}}
+    result, status = _web_execute(ActionRequest(tool=tool_name, params=params), user)
+    lang = data.get("lang")
+    if result.get("output") and lang in ("hi-IN", "mr-IN") and not re.search(r"[\u0900-\u097F]", result["output"]):
+        result["output"] = translate_text(result["output"], source="en", target="hi" if lang == "hi-IN" else "mr")
+    if result.get("confirmation_required") and lang in ("hi-IN", "mr-IN"):
+        result["prompt"] = translate_text(result["prompt"], source="en", target="hi" if lang == "hi-IN" else "mr")
+    return jsonify(result), status
 
-    try:
-        output = ""
-        if tool_name == "calculator":
-            from tools.calculator import CalculatorTool
-            res = CalculatorTool().run(expr=data.get("expression", ""))
-            output = res.spoken
-        elif tool_name == "game":
-            from tools.game import GameTool
-            res = GameTool().run(game=data.get("game", "truth"), action=data.get("action", "next"))
-            output = res.spoken
-        elif tool_name == "image":
-            from tools.image import ImageTool
-            res = ImageTool().run(prompt=data.get("prompt", ""), kind=data.get("kind", "ai"))
-            output = res.spoken
-        elif tool_name == "weather":
-            from tools.weather import WeatherTool
-            res = WeatherTool().run(city=data.get("city", "Delhi"))
-            output = res.spoken
-        elif tool_name == "jokes":
-            from tools.jokes import JokesTool
-            res = JokesTool().run()
-            output = res.spoken
-        elif tool_name == "news":
-            from tools.news import NewsTool
-            res = NewsTool().run(topic=data.get("topic", "technology"))
-            output = res.spoken
-        else:
-            return jsonify({"success": False, "error": f"Unknown tool: {tool_name}"}), 400
 
-        if lang == "hi-IN":
-            output = translate_text(output, source="en", target="hi")
+@app.route("/api/confirm", methods=["POST"])
+def confirm_web_action():
+    data = request.get_json(silent=True) or {}
+    token = str(data.get("token", ""))
+    user = _current_web_user()
+    result, status = _web_confirm(token, user, bool(data.get("approved")), data.get("lang", "en-US"))
+    return jsonify(result), status
 
-        return jsonify({"success": True, "output": output})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/images/<path:filename>", methods=["GET"])
+def serve_generated_image(filename):
+    image_dir = os.path.join(WEB_FILES_DIR, _current_web_user(), "images")
+    safe_name = os.path.basename(filename)
+    if safe_name != filename or not safe_name.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+        return jsonify({"error": "Image not found."}), 404
+    return send_from_directory(image_dir, safe_name, conditional=True)
 
 if __name__ == "__main__":
     print("=" * 60)
-    print(" JARVIS / VARSHA HUD & STUDY CORE ONLINE")
+    print(" VARSHA WEB ASSISTANT & STUDY CORE ONLINE")
     print(" [AUTH SYSTEM]  Email / Mobile Phone OTP Auth Enabled")
     print(" [PERSISTENCE]  SQLite Chat History Active")
     print(" [TRANSLATION]  100% Hindi Universal Mode Active")

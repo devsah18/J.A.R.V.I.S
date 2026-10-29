@@ -4,6 +4,7 @@ __pycache__/
 venv/
 .env
 *.db
+data/web_files/
 logs/*
 !logs/.gitkeep
 .vscode/
