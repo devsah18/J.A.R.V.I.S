@@ -619,7 +619,8 @@ def execute_command():
 
     resp_tag = "JARVIS // MARATHI" if lang == "mr-IN" else ("JARVIS // HINDI" if is_indic_mode else "JARVIS RESPONSE")
     save_chat_turn(user, "ai", reply, resp_tag)
-    return jsonify({"success": True, "response": reply, "is_hindi": is_indic_mode,
+    success = tool_result.get("success", True)
+    return jsonify({"success": success, "response": reply, "is_hindi": is_indic_mode,
                     "tool": tool_result.get("tool"), "data": tool_result.get("data", {})})
 
 # ==========================================
