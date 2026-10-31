@@ -1132,10 +1132,27 @@
                 closeAuthModal();
                 return;
             }
-            if (inInput && e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                executeCommand();
-                return;
+            if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.target.id === 'userInput') {
+                    e.preventDefault();
+                    executeCommand();
+                    return;
+                }
+                if (e.target.id === 'authIdentifier') {
+                    e.preventDefault();
+                    requestOTP();
+                    return;
+                }
+                if (e.target.id === 'authOtpCode') {
+                    e.preventDefault();
+                    verifyOTP();
+                    return;
+                }
+                if (e.target.id === 'settingsNameInput') {
+                    e.preventDefault();
+                    saveName();
+                    return;
+                }
             }
             if (e.ctrlKey && e.key === 'Enter') {
                 e.preventDefault();
@@ -1340,14 +1357,15 @@
                 setListeningState(false);
                 if (data.success && data.text) {
                     document.getElementById('userInput').value = data.text;
-                    logTerminal(`PyAudio heard: "${data.text}"`);
+                    logTerminal(`Heard: "${data.text}"`);
                     executeCommand();
                 } else {
-                    logTerminal(`PyAudio notice: ${data.error || 'No speech heard'}`);
+                    const msg = data.error || (data.status === 'silence' ? 'No speech detected' : 'Speech unclear');
+                    logTerminal(`Listen notice: ${msg}`);
                 }
             } catch (err) {
                 setListeningState(false);
-                logTerminal(`PyAudio error: ${err}`);
+                logTerminal(`Listen fetch error: ${err}`);
             }
         }
 
@@ -1395,82 +1413,57 @@
             if (!voiceOutputEnabled || !text) return;
             const cleanText = text.replace(/[*_#`~[\]]/g, ' ').substring(0, 450);
             const langCode = getLangCode(); // "hi", "mr", or "en"
+            const isIndic = (langCode === "hi" || langCode === "mr");
 
-            // For Hindi / Marathi: try browser voice first, then gTTS fallback
-            if (langCode === "hi" || langCode === "mr") {
-                let nativeVoice = null;
-                if ('speechSynthesis' in window) {
-                    const voices = window.speechSynthesis.getVoices();
-                    // Filter voices matching the language
-                    const langVoices = voices.filter(v => v.lang.includes(langCode));
-                    // Try to match gender preference
-                    nativeVoice = langVoices.find(v => v.name.toLowerCase().includes(currentGender)) || langVoices[0] || null;
-                }
-
-                if (nativeVoice) {
-                    window.speechSynthesis.cancel();
-                    const u = new SpeechSynthesisUtterance(cleanText);
-                    u.voice = nativeVoice;
-                    u.lang = currentLanguage;
-                    u.rate = 1.0;
-                    const label = langCode === "mr" ? "MARATHI TTS" : "HINDI TTS";
-                    u.onstart = () => { isSpeaking = true; document.getElementById('waveStatus').innerText = label; };
-                    u.onend = () => { isSpeaking = false; document.getElementById('waveStatus').innerText = "AWAITING"; };
-                    window.speechSynthesis.speak(u);
-                    return;
-                }
-
-                // Fallback to server-side gTTS
-                try {
-                    const label = langCode === "mr" ? "MARATHI SYNTHESIS" : "HINDI SYNTHESIS";
-                    document.getElementById('waveStatus').innerText = label;
-                    const res = await fetch('/api/voice/speak', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({text: cleanText, lang: currentLanguage, gender: currentGender})
-                    });
-                    const data = await res.json();
-                    if (data.success && data.audio_base64) {
-                        const audio = new Audio("data:audio/mp3;base64," + data.audio_base64);
-                        isSpeaking = true;
-                        audio.onplay = () => { isSpeaking = true; document.getElementById('waveStatus').innerText = "SPEAKING"; };
-                        audio.onended = () => { isSpeaking = false; document.getElementById('waveStatus').innerText = "AWAITING"; };
-                        audio.play();
-                        return;
-                    }
-                } catch(e) {}
-            }
-
-            // English: use browser SpeechSynthesis with gender preference
+            // Try browser speechSynthesis first (works for en + often hi/mr).
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const u = new SpeechSynthesisUtterance(cleanText);
-                u.rate = 1.05;
+                u.rate = 1.0;
+                u.lang = currentLanguage;
                 const voices = window.speechSynthesis.getVoices();
-                const engVoices = voices.filter(v => v.lang.includes('en'));
-                // Try to match gender preference
-                let selectedVoice = engVoices.find(v => v.name.toLowerCase().includes(currentGender));
-                if (!selectedVoice) {
-                    // Fallback: pick known voices by name
-                    if (currentGender === "male") {
-                        selectedVoice = engVoices.find(v => v.name.includes('David') || v.name.includes('Mark') || v.name.includes('Male'));
-                    } else {
-                        selectedVoice = engVoices.find(v => v.name.includes('Zira') || v.name.includes('Hazel') || v.name.includes('Female'));
-                    }
+                let selectedVoice = null;
+                if (isIndic) {
+                    selectedVoice = voices.find(v => v.lang.includes(langCode)) || null;
+                } else {
+                    selectedVoice = voices.find(v => v.lang.includes('en') && v.name.toLowerCase().includes(currentGender))
+                        || voices.find(v => v.lang.includes('en'))
+                        || null;
                 }
-                if (!selectedVoice) selectedVoice = engVoices.find(v => v.name.includes('Natural') || v.name.includes('Google'));
                 if (selectedVoice) u.voice = selectedVoice;
-
                 u.onstart = () => { isSpeaking = true; document.getElementById('waveStatus').innerText = "SPEAKING"; };
                 u.onend = () => { isSpeaking = false; document.getElementById('waveStatus').innerText = "AWAITING"; };
-                u.onerror = () => { isSpeaking = false; };
+                u.onerror = (e) => {
+                    isSpeaking = false;
+                    document.getElementById('waveStatus').innerText = "AWAITING";
+                    console.warn("SpeechSynthesis error:", e);
+                };
                 window.speechSynthesis.speak(u);
-            } else {
-                fetch('/api/voice/speak', {
+                return;
+            }
+
+            // Fallback: server-side TTS (pyttsx3 on desktop, gTTS for Indic).
+            try {
+                const label = isIndic ? (langCode === "mr" ? "MARATHI SYNTHESIS" : "HINDI SYNTHESIS") : "TTS SYNTHESIS";
+                document.getElementById('waveStatus').innerText = label;
+                const res = await fetch('/api/voice/speak', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({text: cleanText, lang: 'en', gender: currentGender})
-                }).catch(e => console.error(e));
+                    body: JSON.stringify({text: cleanText, lang: currentLanguage, gender: currentGender})
+                });
+                const data = await res.json();
+                if (data.success && data.audio_base64) {
+                    const audio = new Audio("data:" + (data.format || "audio/mp3") + ";base64," + data.audio_base64);
+                    isSpeaking = true;
+                    audio.onplay = () => { isSpeaking = true; document.getElementById('waveStatus').innerText = "SPEAKING"; };
+                    audio.onended = () => { isSpeaking = false; document.getElementById('waveStatus').innerText = "AWAITING"; };
+                    audio.onerror = () => { isSpeaking = false; document.getElementById('waveStatus').innerText = "AWAITING"; };
+                    audio.play();
+                    return;
+                }
+                logTerminal(`TTS unavailable: ${data.error || 'no audio returned'}`);
+            } catch (e) {
+                logTerminal(`TTS fetch error: ${e}`);
             }
         }
 
@@ -1514,16 +1507,20 @@
             try {
                 let res;
                 if (selectedSubject) {
-                    res = await fetch('/api/study/ask', {
-                        method: 'POST', headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({question: val, subject: selectedSubject, lang: currentLanguage, user: currentUser})
-                    });
-                    const study = await res.json();
-                    typingEl.remove();
-                    if (!res.ok) throw new Error(study.error || 'Study request failed.');
-                    renderBubble('ai', study.answer || 'No answer returned.', `${study.source || 'STUDY'} // ${study.subject || 'GENERAL'}`);
-                    speakResponse(study.answer || '');
-                    return;
+                    try {
+                        const sRes = await fetch('/api/study/ask', {
+                            method: 'POST', headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({question: val, subject: selectedSubject, lang: currentLanguage, user: currentUser})
+                        });
+                        const study = await sRes.json();
+                        if (sRes.ok && study.answer && study.source !== 'NOT_FOUND' && study.source !== 'ERROR') {
+                            typingEl.remove();
+                            const subTag = isNonEnglish() ? `${study.source} // ${currentLanguage === 'mr-IN' ? 'मराठी' : 'हिन्दी'}` : `${study.source} // ${study.subject || 'GENERAL'}`;
+                            renderBubble('ai', study.answer, subTag);
+                            speakResponse(study.answer);
+                            return;
+                        }
+                    } catch(err) {}
                 }
                 res = await fetch('/api/command', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -1534,9 +1531,13 @@
                 if (data.confirmation_required) data = await confirmAndRun(data);
                 if (!res.ok || data.success === false) throw new Error(data.error || 'Command failed.');
                 const reply = data.response || data.output || 'No response received.';
-                renderBubble('ai', reply, 'VARSHA RESPONSE');
+                const respTag = currentLanguage === 'mr-IN' ? 'जार्विस // मराठी' : (currentLanguage === 'hi-IN' ? 'जार्विस // हिन्दी' : 'VARSHA RESPONSE');
+                renderBubble('ai', reply, respTag);
                 if (data.data && data.data.image_url) appendToolImage(data.data.image_url);
-                if (data.data && data.data.url && data.tool === 'browser') appendToolLink(data.data.url);
+                if (data.data && data.data.url && data.tool === 'browser') {
+                    appendToolLink(data.data.url);
+                    try { window.open(data.data.url, '_blank'); } catch(e) {}
+                }
                 speakResponse(reply);
             } catch (e) {
                 typingEl.remove();
@@ -1575,7 +1576,10 @@
                 const output = data.output || 'The tool completed without a message.';
                 renderBubble('ai', output, `TOOL // ${toolName.toUpperCase()}`);
                 if (data.data && data.data.image_url) appendToolImage(data.data.image_url);
-                if (data.data && data.data.url && toolName === 'browser') appendToolLink(data.data.url);
+                if (data.data && data.data.url && toolName === 'browser') {
+                    appendToolLink(data.data.url);
+                    try { window.open(data.data.url, '_blank'); } catch(e) {}
+                }
                 speakResponse(output);
             } catch (e) { renderBubble('ai', `Tool error: ${e.message || e}`, 'ERROR'); }
         }

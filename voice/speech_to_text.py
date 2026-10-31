@@ -93,9 +93,22 @@ class SpeechToText:
         if sr is None:
             return -1
         try:
+            # First verify with pyaudio that device exists and has input channels
+            audio = sr.Microphone.get_pyaudio().PyAudio()
+            try:
+                if device_index < 0 or device_index >= audio.get_device_count():
+                    return -1
+                info = audio.get_device_info_by_index(device_index)
+                if not info or info.get("maxInputChannels", 0) <= 0:
+                    return -1
+            finally:
+                audio.terminate()
+
             m = sr.Microphone(device_index=device_index)
             with m as source:
-                chunk = source.stream.read(source.CHUNK)
+                if not hasattr(source, "stream") or source.stream is None:
+                    return -1
+                chunk = source.stream.read(source.CHUNK, exception_on_overflow=False)
                 shorts = [
                     int.from_bytes(chunk[j : j + 2], "little", signed=True)
                     for j in range(0, len(chunk), 2)
@@ -106,59 +119,67 @@ class SpeechToText:
 
     @classmethod
     def _resolve_device_index(cls, requested: int | None) -> int | None:
-        """Resolve the most reliable microphone device index.
+        """Resolve the most reliable microphone device index safely.
 
-        Probes audio endpoints to verify they actually stream audio, avoiding
-        silent, disconnected, or muted virtual devices.
+        Probes only valid input audio endpoints with maxInputChannels > 0,
+        avoiding speaker/headphone output devices and invalid device crashes.
         """
         if sr is None:
             return None
         try:
-            names = sr.Microphone.list_microphone_names()
-            if not names:
+            audio = sr.Microphone.get_pyaudio().PyAudio()
+            input_devices: dict[int, dict] = {}
+            try:
+                for i in range(audio.get_device_count()):
+                    try:
+                        info = audio.get_device_info_by_index(i)
+                        if info and info.get("maxInputChannels", 0) > 0:
+                            input_devices[i] = info
+                    except Exception:
+                        continue
+            finally:
+                audio.terminate()
+
+            if not input_devices:
                 return None
 
-            # If user explicitly requested a valid device with real audio signal (> 100), use it
-            if requested is not None and 0 <= requested < len(names):
+            # If user explicitly requested a valid input device with signal, verify and use it
+            if requested is not None and requested in input_devices:
                 peak = cls._test_device_signal(requested)
-                if peak > 100:
-                    logger.info("Using configured microphone index %d (%s, signal=%d)", requested, names[requested], peak)
+                if peak > 80:
+                    logger.info("Using configured microphone index %d (%s, signal=%d)", requested, input_devices[requested]["name"], peak)
                     return requested
-                else:
-                    logger.info("Configured device index %d (%s) has no signal (peak=%d). Scanning for active microphone...", requested, names[requested], peak)
 
-            # Probe all candidate input devices
-            candidates: list[int] = []
-            for i, n in enumerate(names):
-                n_lower = n.lower()
-                # Skip known output endpoints
-                if any(k in n_lower for k in ("output", "speaker", "headphone")):
+            # Rank candidate input devices (prefer hardware microphones / arrays over virtual mappers)
+            preferred = []
+            others = []
+            for idx, info in input_devices.items():
+                name_low = info.get("name", "").lower()
+                if any(k in name_low for k in ("output", "speaker", "headphone")):
                     continue
-                if any(k in n_lower for k in ("microphone", "array", "intel", "realtek", "input", "sound capture", "sound mapper")):
-                    candidates.append(i)
-
-            # Add remaining indices as fallbacks
-            for i in range(len(names)):
-                if i not in candidates:
-                    candidates.append(i)
+                if any(k in name_low for k in ("microphone", "array", "intel", "realtek", "input")):
+                    preferred.append(idx)
+                else:
+                    others.append(idx)
 
             best_idx = None
-            best_peak = 100
+            best_peak = 80
 
-            for idx in candidates:
+            for idx in preferred + others:
                 peak = cls._test_device_signal(idx)
                 if peak > best_peak:
                     best_peak = peak
                     best_idx = idx
 
             if best_idx is not None:
-                logger.info("Auto-selected active microphone index %d (%s, signal=%d)", best_idx, names[best_idx], best_peak)
+                logger.info("Auto-selected active microphone index %d (%s, signal=%d)", best_idx, input_devices[best_idx]["name"], best_peak)
                 return best_idx
 
-            # Fallback if no device has strong signal
-            if requested is not None and 0 <= requested < len(names):
+            if requested is not None and requested in input_devices:
                 return requested
-            return 0 if names else None
+
+            # Return first available valid input device
+            return next(iter(input_devices.keys()), None)
         except Exception as e:
             logger.warning("Error resolving microphone index: %s", e)
             return requested if (requested is not None and requested >= 0) else None
@@ -168,9 +189,13 @@ class SpeechToText:
 
     def _probe_microphone(self) -> bool:
         try:
-            self.get_microphone()
+            if self.device_index is None:
+                return False
+            m = self.get_microphone()
+            with m:
+                pass
             return True
-        except (OSError, AttributeError) as error:
+        except (OSError, AttributeError, Exception) as error:
             logger.warning("Microphone backend unavailable: %s", error)
             return False
 
@@ -179,7 +204,18 @@ class SpeechToText:
         if sr is None:
             return []
         try:
-            return sr.Microphone.list_microphone_names()
+            audio = sr.Microphone.get_pyaudio().PyAudio()
+            result = []
+            try:
+                for i in range(audio.get_device_count()):
+                    try:
+                        info = audio.get_device_info_by_index(i)
+                        result.append(info.get("name", f"Device {i}"))
+                    except Exception:
+                        result.append(f"Device {i}")
+            finally:
+                audio.terminate()
+            return result
         except Exception:
             return []
 

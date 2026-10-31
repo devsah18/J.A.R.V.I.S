@@ -223,19 +223,30 @@ def _web_execute(action, user, assistant=None):
     tool = assistant.router.get(action.tool)
     if tool is None:
         return {"success": False, "error": f"Unknown tool: {action.tool}"}, 404
-    # A website can open a URL in the visitor's browser, but webbrowser.open()
-    # on the server cannot control the visitor's desktop.
+    # Direct browser opening: launch on local desktop and forward URL to web client
     if action.tool == "browser":
         target = assistant.browser_tool._normalize(action.params.get("url", ""))
         if not target:
             return {"success": False, "error": "I need a website or URL to open."}, 200
         if urllib.parse.urlsplit(target).scheme.lower() not in {"http", "https", "mailto"}:
             return {"success": False, "error": "Web links must use HTTP, HTTPS, or mailto."}, 200
-        return {"success": True, "output": f"Opening {target}.", "tool": "browser", "data": {"url": target}}, 200
+        try:
+            import webbrowser
+            webbrowser.open(target)
+        except Exception as e:
+            print(f"[webbrowser.open error]: {e}")
+        display_name = assistant.browser_tool._display(target)
+        return {"success": True, "output": f"Opening {display_name}.", "tool": "browser", "data": {"url": target}}, 200
+
+    # Direct apps launching / closing on local desktop
     if action.tool == "apps":
+        with _assistant_lock:
+            outcome = assistant.router.dispatch(action)
         return {
-            "success": False,
-            "error": "A web page cannot launch or close applications on your device. Use the desktop assistant for app control.",
+            "success": outcome.ok,
+            "output": outcome.spoken,
+            "tool": outcome.tool,
+            "data": outcome.result.data if outcome.result else {},
         }, 200
     risk = tool.risk_for(**action.params)
     summary = assistant.router._summarise(tool, action.params)
@@ -323,6 +334,10 @@ if QAEngine is not None:
 @app.route("/")
 def index():
     return send_from_directory(app.static_folder, "index.html")
+
+@app.route("/favicon.ico")
+def favicon():
+    return ("", 204)
 
 # ==========================================
 # AUTHENTICATION (EMAIL / PHONE OTP)
@@ -538,21 +553,22 @@ def execute_command():
     command_text = data.get("command", "").strip()
     lang = data.get("lang", "en-US")
     user = _current_web_user()
-    is_hindi_mode = (lang == "hi-IN" or is_hindi_text(command_text))
+    is_indic_mode = (lang in ("hi-IN", "mr-IN") or is_non_english_text(command_text))
+    target_lang = "mr" if lang == "mr-IN" else ("hi" if (lang == "hi-IN" or is_hindi_text(command_text)) else "en")
 
     if not command_text:
         return jsonify({"error": "Empty command"}), 400
 
-    save_chat_turn(user, "user", command_text, "OPERATOR // HINDI" if is_hindi_mode else "OPERATOR")
+    user_tag = "OPERATOR // MARATHI" if lang == "mr-IN" else ("OPERATOR // HINDI" if is_indic_mode else "OPERATOR")
+    save_chat_turn(user, "user", command_text, user_tag)
 
     asst = get_assistant()
     if asst is None:
         return jsonify({"success": False, "error": "Assistant is unavailable."}), 503
     try:
         internal_cmd = command_text
-        if is_hindi_mode and re.search(r"[\u0900-\u097F]", command_text):
-            source_lang = "mr" if lang == "mr-IN" else "hi"
-            internal_cmd = translate_text(command_text, source=source_lang, target="en")
+        if is_indic_mode and re.search(r"[\u0900-\u097F]", command_text):
+            internal_cmd = translate_text(command_text, source=target_lang, target="en")
 
         with _assistant_lock:
             asst.context.add_user(internal_cmd)
@@ -562,9 +578,9 @@ def execute_command():
             if response.has_action:
                 result, status = _web_execute(response.action, user, asst)
                 if result.get("confirmation_required"):
-                    if is_hindi_mode:
-                        result["prompt"] = translate_text(result["prompt"], source="en", target="mr" if lang == "mr-IN" else "hi")
-                    result["is_hindi"] = is_hindi_mode
+                    if is_indic_mode:
+                        result["prompt"] = translate_text(result["prompt"], source="en", target=target_lang)
+                    result["is_hindi"] = is_indic_mode
                     return jsonify(result), status
                 tool_result = result
                 reply = result.get("output") or result.get("error", "The action failed.")
@@ -573,16 +589,36 @@ def execute_command():
                     asst._note_context(response.action)
             else:
                 reply = response.speech or ""
-            if is_hindi_mode and not re.search(r"[\u0900-\u097F]", reply):
-                reply = translate_text(reply, source="en", target="mr" if lang == "mr-IN" else "hi")
+
+            # If fallback response ("I'm not sure..."), attempt Wikipedia / Knowledge lookup before giving up
+            if not reply or "not sure what you'd like" in reply.lower():
+                try:
+                    from tools.wikipedia import WikipediaTool
+                    wiki = WikipediaTool()
+                    cleaned_q = re.sub(r"^(?:what is|what are|who is|who was|tell me about|explain|describe)\s+", "", internal_cmd, flags=re.IGNORECASE).strip()
+                    cleaned_q = re.sub(r"^(?:an?|the)\s+", "", cleaned_q, flags=re.IGNORECASE).strip()
+                    w_res = wiki.run(query=cleaned_q or internal_cmd)
+                    if w_res.ok and w_res.message:
+                        reply = w_res.message
+                        tool_result = {"tool": "wikipedia", "data": w_res.data}
+                except Exception:
+                    pass
+
+            if not reply:
+                reply = "I'm online and listening. How can I assist you?"
+
+            if is_indic_mode and not re.search(r"[\u0900-\u097F]", reply):
+                reply = translate_text(reply, source="en", target=target_lang)
+
             asst.context.add_assistant(reply)
             asst.memory.log("assistant", reply)
     except Exception as e:
         app.logger.exception("Command failed")
         return jsonify({"success": False, "error": str(e)}), 500
 
-    save_chat_turn(user, "ai", reply, "VARSHA RESPONSE")
-    return jsonify({"success": True, "response": reply, "is_hindi": is_hindi_mode,
+    resp_tag = "JARVIS // MARATHI" if lang == "mr-IN" else ("JARVIS // HINDI" if is_indic_mode else "JARVIS RESPONSE")
+    save_chat_turn(user, "ai", reply, resp_tag)
+    return jsonify({"success": True, "response": reply, "is_hindi": is_indic_mode,
                     "tool": tool_result.get("tool"), "data": tool_result.get("data", {})})
 
 # ==========================================
@@ -688,7 +724,7 @@ def list_tools():
     assistant = get_assistant()
     if assistant is None:
         return jsonify({"tools": []}), 503
-    tools = [schema for schema in assistant.router.schemas() if schema["name"] != "apps"]
+    tools = [schema for schema in assistant.router.schemas()]
     return jsonify({"tools": tools})
 
 
@@ -734,4 +770,4 @@ if __name__ == "__main__":
     print(" [TRANSLATION]  100% Hindi Universal Mode Active")
     print("=" * 60)
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)

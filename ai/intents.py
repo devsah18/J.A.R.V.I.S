@@ -30,19 +30,39 @@ WEBSITES: dict[str, str] = {
     "stack overflow": "https://stackoverflow.com",
     "chatgpt": "https://chat.openai.com",
     "maps": "https://maps.google.com",
+    "google maps": "https://maps.google.com",
     "news": "https://news.google.com",
+    "twitter": "https://x.com",
+    "x": "https://x.com",
+    "instagram": "https://www.instagram.com",
+    "facebook": "https://www.facebook.com",
+    "linkedin": "https://www.linkedin.com",
+    "whatsapp": "https://web.whatsapp.com",
+    "telegram": "https://web.telegram.org",
+    "netflix": "https://www.netflix.com",
+    "amazon": "https://www.amazon.com",
+    "flipkart": "https://www.flipkart.com",
+    "drive": "https://drive.google.com",
+    "google drive": "https://drive.google.com",
+    "gemini": "https://gemini.google.com",
+    "claude": "https://claude.ai",
 }
 
 _GREETINGS = {
     "hi", "hello", "hey", "yo", "hi there", "hello there", "hey there",
     "good morning", "good afternoon", "good evening",
+    "how are you", "how are you doing", "how are you today", "how do you do", "how is it going",
     # Hindi Greetings
     "namaste", "namaskar", "pranam", "kya haal hai", "kaise ho", "kaise hain aap",
     "नमस्ते", "नमस्कार", "प्रणाम", "कैसे हो", "क्या हाल है", "शुभ प्रभात",
+    # Marathi Greetings
+    "kasa ahes", "kase ahat", "kashi ahes", "kay challay", "shubh sakal", "shubh sandhyakal",
+    "कसा आहेस", "कसे आहात", "कशी आहेस", "काय चाललंय", "शुभ सकाळ", "शुभ संध्याकाळ",
 }
 _THANKS = {
     "thanks", "thank you", "thanks a lot", "much appreciated", "cheers",
     "dhanyawad", "shukriya", "bahut dhanyawad", "धन्यवाद", "शुक्रिया",
+    "aabhar", "khup aabhar", "आभार", "खूप आभार",
 }
 
 _URL_RE = re.compile(r"^(https?://|www\.)\S+$", re.IGNORECASE)
@@ -65,20 +85,30 @@ class IntentParser:
         low = raw.lower().rstrip(" .!?")
 
         if low in _GREETINGS or (low.split(" ")[0] in {"hi", "hello", "hey"} and len(low.split()) <= 2):
-            if any(k in low for k in ("namaste", "namaskar", "pranam", "नमस्ते", "नमस्कार", "प्रणाम")):
+            if any(k in low for k in ("kasa ahes", "kase ahat", "kashi ahes", "kay challay", "कसा", "कसे आहात", "कशी आहेस")):
+                return EngineResponse(speech="मी अगदी मजेत आहे! तुम्ही कसे आहात? मी तुम्हाला कशी मदत करू शकतो?")
+            if any(k in low for k in ("namaskar", "shubh sakal", "नमस्कार", "शुभ सकाळ")):
+                return EngineResponse(speech=f"नमस्कार! मी {self._name()} आहे. मी तुम्हाला कशी मदत करू शकतो?")
+            if any(k in low for k in ("namaste", "pranam", "नमस्ते", "प्रणाम")):
                 return EngineResponse(speech=f"नमस्ते! मैं {self._name()} हूँ। मैं आपकी क्या मदद कर सकता हूँ?")
             if any(k in low for k in ("kaise ho", "kya haal hai", "कैसे हो", "क्या हाल है")):
                 return EngineResponse(speech="मैं बिल्कुल ठीक हूँ! आप कैसे हैं?")
+            if any(k in low for k in ("how are you", "how do you do", "how is it going")):
+                return EngineResponse(speech=f"I'm doing great, thank you! How can I help you today?")
             return EngineResponse(speech=f"{self._name()} online. What do you need?")
         if low in _THANKS:
+            if any(k in low for k in ("aabhar", "आभार")):
+                return EngineResponse(speech="काही हरकत नाही! आपले स्वागत आहे.")
             if any(k in low for k in ("dhanyawad", "shukriya", "धन्यवाद", "शुक्रिया")):
                 return EngineResponse(speech="आपका स्वागत है!")
             return EngineResponse(speech="Anytime.")
-        if re.search(r"(who are you|what are you|your name|aap kaun ho|tum kaun ho|aapka naam kya hai|आप कौन हो|तुम कौन हो|आपका नाम क्या है|आप कौन हैं)", low):
+        if re.search(r"(who are you|what are you|your name|aap kaun ho|tum kaun ho|aapka naam kya hai|आप कौन हो|तुम कौन हो|आपका नाम क्या है|आप कौन हैं|tu kon ahes|tumhi kon ahat|tujhe naav|tumche naav|तुम्ही कोण|तू कोण|नाव काय)", low):
+            if any(k in low for k in ("tu kon", "tumhi kon", "tujhe naav", "tumche naav", "कोण", "नाव")):
+                return EngineResponse(speech=f"मी {self._name()} आहे, तुमचा वैयक्तिक AI सहाय्यक.")
             if any(k in low for k in ("aap kaun", "tum kaun", "aapka naam", "कौन", "नाम")):
                 return EngineResponse(speech=f"मैं {self._name()} हूँ, आपका व्यक्तिगत AI सहायक।")
             return EngineResponse(speech=f"I'm {self._name()}, your personal assistant.")
-        if re.search(r"\b(what can you do|help|your capabilities|what are you capable of|kya kar sakte ho|madad|मदद|क्या कर सकते हो)\b", low):
+        if re.search(r"\b(what can you do|help|your capabilities|what are you capable of|kya kar sakte ho|madad|मदद|क्या कर सकते हो|काय करू शकतोस|मदत)\b", low):
             return EngineResponse(speech=self._help_text())
 
         for handler in (
@@ -131,14 +161,19 @@ class IntentParser:
     # ------------------------------------------------------------------ #
     def _time_date(self, raw, low, context) -> EngineResponse | None:
         now = datetime.now()
+        is_marathi = any(w in low for w in ("kiti vajle", "vela kay", "kiti time", "konta divas", "tarikh kay", "वेळ", "वाजले", "तारीख", "दिवस"))
         is_hindi = any(w in low for w in ("samay", "kitne baje", "kya samay", "kya time", "samay kya", "समय", "कितने बजे", "तारीख", "din kya"))
-        if re.search(r"\b(what time|the time|current time|time is it|samay|kitne baje|समय|बजे)\b", low):
+        if re.search(r"\b(what time|the time|current time|time is it|samay|kitne baje|समय|बजे|kiti vajle|vela kay|वाजले|वेळ)\b", low):
             time_str = now.strftime('%I:%M %p').lstrip('0')
+            if is_marathi:
+                return EngineResponse(speech=f"सध्या {time_str} वाजले आहेत.")
             if is_hindi:
                 return EngineResponse(speech=f"अभी समय {time_str} हुआ है।")
             return EngineResponse(speech=f"It's {time_str}.")
-        if re.search(r"\b(what(?:'s| is)? the date|today'?s date|what day is it|aaj ki date|aaj ka din|तारीख|आज का दिन)\b", low):
+        if re.search(r"\b(what(?:'s| is)? the date|today'?s date|what day is it|aaj ki date|aaj ka din|तारीख|आज का दिन|aajchi tarikh|konta divas|आजची तारीख)\b", low):
             date_str = now.strftime('%A, %d %B %Y')
+            if is_marathi:
+                return EngineResponse(speech=f"आज {date_str} आहे.")
             if is_hindi:
                 return EngineResponse(speech=f"आज {date_str} है।")
             return EngineResponse(speech=f"Today is {date_str}.")
@@ -272,10 +307,21 @@ class IntentParser:
     # Open / close
     # ------------------------------------------------------------------ #
     def _open(self, raw, low, context) -> EngineResponse | None:
-        match = re.match(r"^(?:open|launch|start|go to)\s+(.+)$", low)
-        if not match:
+        target = None
+        # Prefix match: "open chrome", "launch vs code", "kholo youtube", "ughada calculator"
+        prefix_match = re.match(r"^(?:open|launch|start|go to|kholo|ughada|suru kara|chalu karo|खोलो|उघडा|सुरू करा|चालू करा)\s+(.+)$", low)
+        if prefix_match:
+            target = prefix_match.group(1).strip()
+        else:
+            # Suffix match: "youtube kholo", "chrome open karo", "notepad chalu karo", "calculator ughada"
+            suffix_match = re.match(r"^(.+?)\s*(?:open karo|kholo|chalu karo|start karo|ughada|suru kara|खोलो|उघडा|चालू करा|सुरू करा)$", low)
+            if suffix_match:
+                target = suffix_match.group(1).strip()
+
+        if not target:
             return None
-        target = self._clean_target(match.group(1))
+
+        target = self._clean_target(target)
 
         if _URL_RE.match(target) or _DOMAIN_RE.match(target):
             return EngineResponse(action=ActionRequest("browser", {"url": target}))
@@ -288,10 +334,18 @@ class IntentParser:
         return EngineResponse(action=ActionRequest("apps", {"action": "open", "name": target}))
 
     def _close(self, raw, low, context) -> EngineResponse | None:
-        match = re.match(r"^(?:close|quit|exit|kill|stop)\s+(.+)$", low)
-        if not match:
+        target = None
+        prefix_match = re.match(r"^(?:close|quit|exit|kill|stop|band karo|band kara|बंद करो|बंद करा)\s+(.+)$", low)
+        if prefix_match:
+            target = prefix_match.group(1).strip()
+        else:
+            suffix_match = re.match(r"^(.+?)\s*(?:close karo|band karo|band kara|stop karo|बंद करो|बंद करा)$", low)
+            if suffix_match:
+                target = suffix_match.group(1).strip()
+
+        if not target:
             return None
-        target = self._clean_target(match.group(1))
+        target = self._clean_target(target)
         return EngineResponse(action=ActionRequest("apps", {"action": "close", "name": target}))
 
     # ------------------------------------------------------------------ #
@@ -483,11 +537,24 @@ class IntentParser:
     # Wikipedia / Knowledge
     # ------------------------------------------------------------------ #
     def _wiki_cmd(self, raw, low, context) -> EngineResponse | None:
-        match = re.match(r"^(?:wikipedia|who is|who was|tell me about|what is an?)\s+(.+)$", low)
+        # Prefix patterns: "what is X", "who is X", "tell me about X", "explain X"
+        match = re.match(r"^(?:wikipedia|who is|who was|tell me about|what is(?: an?| the)?|what are(?: the)?|explain|describe)\s+(.+)$", low)
         if match:
             query = match.group(1).strip()
-            if not any(k in query for k in ("the time", "the date", "system", "cpu", "ram", "battery", "my name", "weather")):
+            # Avoid routing system/time/weather/calc queries to wiki
+            if not any(k in query for k in ("the time", "the date", "system", "cpu", "ram", "battery", "my name", "weather", "today", "tomorrow")):
+                # Strip leading articles
+                query = re.sub(r"^(?:an?|the)\s+", "", query).strip()
+                if query:
+                    return EngineResponse(action=ActionRequest("wikipedia", {"query": query}))
+
+        # Suffix patterns for Hindi / Marathi: "photosynthesis kya hai", "gravity kay ahe"
+        suffix_match = re.search(r"^(.+?)\s*(?:kya hai|kya hota hai|kay ahe|kay asate|बद्दल माहिती द्या|बद्दल माहिती सांगा|म्हणजे काय)\s*$", low)
+        if suffix_match:
+            query = suffix_match.group(1).strip()
+            if query and not any(k in query for k in ("time", "samay", "weather", "mausam")):
                 return EngineResponse(action=ActionRequest("wikipedia", {"query": query}))
+
         return None
 
     # Helpers
