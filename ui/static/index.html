@@ -147,7 +147,74 @@
             gap: 6px;
         }
 
-        /* Settings Panel */
+        /* Welcome / Onboarding screen (shown until first message) */
+        .welcome-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 4000;
+            background: radial-gradient(circle at 50% 40%, rgba(0, 242, 254, 0.10), transparent 60%),
+                        var(--bg-deep);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 24px;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .welcome-screen.hidden { opacity: 0; transform: scale(1.04); pointer-events: none; }
+        .welcome-logo {
+            width: 92px; height: 92px;
+            border: 2px solid var(--cyan);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 30px var(--cyan-glow), inset 0 0 18px rgba(0,242,254,0.15);
+            animation: pulse-glow 3s infinite alternate;
+        }
+        .welcome-logo-core { width: 26px; height: 26px; background: var(--cyan); border-radius: 50%; }
+        .welcome-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: #fff;
+            text-shadow: 0 0 18px var(--cyan);
+            text-align: center;
+        }
+        .welcome-sub {
+            font-size: 0.85rem;
+            letter-spacing: 3px;
+            color: var(--text-dim);
+            text-align: center;
+            max-width: 560px;
+        }
+        .welcome-quick {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            max-width: 620px;
+            margin-top: 8px;
+        }
+        .welcome-quick button {
+            background: rgba(0, 242, 254, 0.06);
+            border: 1px solid rgba(0, 242, 254, 0.35);
+            color: var(--cyan);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .welcome-quick button:hover {
+            background: var(--cyan);
+            color: #000;
+            box-shadow: 0 0 14px var(--cyan);
+            transform: translateY(-2px);
+        }
         .settings-panel {
             position: fixed;
             top: 50%; left: 50%;
@@ -663,6 +730,24 @@
                     <a href="javascript:void(0)" onclick="backToStep1()" style="color: var(--text-dim); font-size: 0.75rem; text-decoration: none;">← CHANGE IDENTIFIER</a>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- WELCOME / ONBOARDING SCREEN -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-logo"><div class="welcome-logo-core"></div></div>
+        <div class="welcome-title" id="welcomeTitle">VARSHA</div>
+        <div class="welcome-sub" id="welcomeSub">Your personal AI assistant &amp; study core is online.<br>Type a command or click a quick action below to begin.</div>
+        <div class="welcome-quick" id="welcomeQuick">
+            <button onclick="quickStart('What time is it?')">🕒 Time</button>
+            <button onclick="quickStart('What is the weather in Mumbai?')">🌤️ Weather</button>
+            <button onclick="quickStudy('Physics', 'Explain Newton first law')">⚡ Physics</button>
+            <button onclick="quickStart('Tell me a joke')">😄 Joke</button>
+            <button onclick="quickStart('search for Python programming')">🔍 Search</button>
+            <button onclick="quickStart('open youtube')">▶️ YouTube</button>
+        </div>
+        <div style="font-size:0.7rem;color:var(--text-dim);letter-spacing:1px;margin-top:6px;">
+            TIP: Press <span style="color:var(--cyan);font-family:'JetBrains Mono';">/</span> to focus the command bar · <span style="color:var(--cyan);font-family:'JetBrains Mono';">Enter</span> to send · <span style="color:var(--cyan);font-family:'JetBrains Mono';">Ctrl+Enter</span> for voice
         </div>
     </div>
 
@@ -1723,9 +1808,29 @@
             logTerminal(`Filter: ${sub ? sub.toUpperCase() : 'ALL'}`);
         }
 
+        function quickStart(command) {
+            const input = document.getElementById('userInput');
+            input.value = command;
+            executeCommand();
+        }
+
+        function showWelcome() {
+            const w = document.getElementById('welcomeScreen');
+            if (w) w.classList.remove('hidden');
+        }
+        function hideWelcome() {
+            const w = document.getElementById('welcomeScreen');
+            if (w) w.classList.add('hidden');
+        }
+
         // Initialize Everything
         applyLanguageStrings(currentLanguage);
-        loadChatHistory();
+        loadChatHistory().then(() => {
+            // Hide welcome once chat history is loaded if there are messages
+            const feed = document.getElementById('feedContainer');
+            if (feed && feed.children.length > 1) hideWelcome();
+            else showWelcome();
+        });
         loadSubjects();
         loadTools();
     </script>
