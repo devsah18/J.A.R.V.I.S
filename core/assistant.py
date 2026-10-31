@@ -24,6 +24,7 @@ from tools.files import FilesTool
 from tools.finance import FinanceTool
 from tools.image import ImageTool
 from tools.jokes import JokesTool
+from tools.maps import MapsTool
 from tools.news import NewsTool
 from tools.search import SearchTool
 from tools.system import SystemTool
@@ -82,6 +83,7 @@ class Assistant:
                 FilesTool(),
                 TasksTool(self.memory),
                 WeatherTool(),
+                MapsTool(),
                 WikipediaTool(),
                 DictionaryTool(),
                 FinanceTool(),

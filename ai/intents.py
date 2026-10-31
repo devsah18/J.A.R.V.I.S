@@ -124,6 +124,7 @@ class IntentParser:
             self._system,
             self._memory_cmd,
             self._tasks_cmd,
+            self._maps_cmd,
             self._files_cmd,
             self._wiki_cmd,
             self._search,
@@ -481,6 +482,47 @@ class IntentParser:
                 loc = "Delhi"
             is_forecast = "forecast" in low or "tomorrow" in low or "kal" in low
             return EngineResponse(action=ActionRequest("weather", {"location": loc, "forecast": is_forecast}))
+        return None
+
+    # ------------------------------------------------------------------ #
+    # Maps / Directions / Places
+    # ------------------------------------------------------------------ #
+    def _maps_cmd(self, raw, low, context) -> EngineResponse | None:
+        # Directions: "directions from X to Y", "route X to Y", "how to reach X from Y"
+        dir_match = re.search(
+            r"(?:directions?|route|how to reach)\s+(?:from\s+)?(.+?)\s+(?:to|until|till|via)\s+(.+)$", low
+        )
+        if dir_match:
+            return EngineResponse(action=ActionRequest("maps", {
+                "action": "directions",
+                "origin": dir_match.group(1).strip(),
+                "destination": dir_match.group(2).strip(),
+            }))
+
+        # Distance: "distance between X and Y"
+        dist_match = re.search(r"distance\s+between\s+(.+?)\s+and\s+(.+)$", low)
+        if dist_match:
+            return EngineResponse(action=ActionRequest("maps", {
+                "action": "distance",
+                "origin": dist_match.group(1).strip(),
+                "destination": dist_match.group(2).strip(),
+            }))
+
+        # Generic "open map" / "maps" trigger (check before place search so
+        # "show me the map" doesn't get parsed as a search for "the map").
+        if re.search(r"\b(maps|google maps|open map|show map|show me the map)\b", low):
+            return EngineResponse(action=ActionRequest("maps", {"action": "search", "query": "my location"}))
+
+        # Place search — only maps-specific phrasing (avoids stealing plain
+        # "search for X" queries, which belong to the web-search tool).
+        search_match = re.search(
+            r"(?:find|locate|where is|show me)\s+(.+?)\s*(?:near me|on the map|map|maps|station|restaurant|hotel|cafe|shop|mall|market|airport|school|hospital)?\s*$", low
+        )
+        if search_match and re.search(r"\b(near me|on the map|map|maps|station|restaurant|hotel|cafe|shop|mall|market|airport|school|hospital)\b", low):
+            return EngineResponse(action=ActionRequest("maps", {
+                "action": "search",
+                "query": search_match.group(1).strip(),
+            }))
         return None
 
     # ------------------------------------------------------------------ #
