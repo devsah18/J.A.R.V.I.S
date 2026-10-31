@@ -294,6 +294,159 @@
             color: var(--cyan);
             margin: 2px 4px 2px 0;
         }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 5000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 4px;
+            padding: 12px 16px;
+            min-width: 240px;
+            max-width: 380px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            animation: slideIn 0.3s ease-out;
+            pointer-events: auto;
+            position: relative;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        .toast.success { border-left: 3px solid var(--success); }
+        .toast.error { border-left: 3px solid var(--danger); }
+        .toast.warning { border-left: 3px solid var(--warning); }
+        .toast.info { border-left: 3px solid var(--cyan); }
+        .toast .close-btn {
+            position: absolute; top: 6px; right: 8px;
+            background: none; border: none; color: var(--text-dim);
+            font-size: 1.2rem; cursor: pointer; line-height: 1;
+        }
+        .toast .close-btn:hover { color: #fff; }
+        @keyframes slideIn {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            to { transform: translateX(120%); opacity: 0; }
+        }
+        .toast.removing { animation: slideOut 0.2s ease-in forwards; }
+
+        /* Confirmation Modal */
+        .confirm-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 6000;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .confirm-modal-overlay.visible { opacity: 1; pointer-events: auto; }
+        .confirm-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--cyan);
+            border-radius: 6px;
+            padding: 24px;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 0 40px rgba(0, 242, 254, 0.3);
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+        .confirm-modal-overlay.visible .confirm-modal { transform: scale(1); }
+        .confirm-modal h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            color: var(--cyan);
+            margin-bottom: 12px;
+        }
+        .confirm-modal p { color: var(--text-main); margin-bottom: 20px; font-size: 0.9rem; }
+        .confirm-actions { display: flex; gap: 12px; justify-content: flex-end; }
+        .confirm-btn {
+            padding: 10px 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            border-radius: 2px;
+            cursor: pointer;
+            border: 1px solid;
+            transition: all 0.2s;
+        }
+        .confirm-btn.cancel {
+            background: transparent;
+            border-color: var(--text-dim);
+            color: var(--text-main);
+        }
+        .confirm-btn.cancel:hover { border-color: var(--danger); color: var(--danger); }
+        .confirm-btn.confirm {
+            background: var(--cyan);
+            border-color: var(--cyan);
+            color: #000;
+        }
+        .confirm-btn.confirm:hover { box-shadow: 0 0 15px var(--cyan); }
+        .confirm-btn.danger {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: #fff;
+        }
+        .confirm-btn.danger:hover { box-shadow: 0 0 15px var(--danger); }
+
+        /* Chat bubble improvements */
+        .chat-bubble .copy-btn {
+            opacity: 0;
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            background: rgba(0, 242, 254, 0.1);
+            border: 1px solid var(--bg-card-border);
+            color: var(--cyan);
+            padding: 2px 8px;
+            font-size: 0.65rem;
+            font-family: 'JetBrains Mono', monospace;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .chat-bubble:hover .copy-btn { opacity: 1; }
+        .chat-bubble .copy-btn:hover { background: var(--cyan); color: #000; }
+        .chat-bubble .timestamp {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Empty state */
+        .feed-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-dim);
+            text-align: center;
+            padding: 24px;
+        }
+        .feed-empty-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+        .feed-empty-text { font-size: 0.9rem; letter-spacing: 1px; }
+        .feed-empty-hint { font-size: 0.7rem; margin-top: 8px; opacity: 0.6; }
         .settings-foot {
             display: flex;
             justify-content: space-between;
@@ -559,7 +712,9 @@
             box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
             align-items: center;
             margin-top: 8px;
+            position: relative;
         }
+        .cmd-bar.listening { border-color: var(--success); box-shadow: 0 0 15px rgba(0, 255, 170, 0.3); }
         .cmd-input {
             flex: 1;
             background: transparent;
@@ -571,6 +726,41 @@
             padding: 6px 8px;
         }
         .cmd-input::placeholder { color: var(--text-dim); }
+        .mic-btn {
+            background: rgba(0, 242, 254, 0.1);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 6px 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .mic-btn:hover { background: var(--cyan); color: #000; }
+        .mic-btn.listening { background: var(--success); border-color: var(--success); color: #000; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .tts-toggle-btn {
+            background: rgba(0, 242, 254, 0.1);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 6px 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .tts-toggle-btn:hover { background: var(--cyan); color: #000; }
+        .tts-toggle-btn.active { background: var(--cyan); color: #000; }
         .cmd-btn {
             background: var(--cyan-dim);
             border: 1px solid var(--cyan);
@@ -1013,6 +1203,21 @@
 
     </div>
 
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Confirmation Modal -->
+    <div class="confirm-modal-overlay" id="confirmModalOverlay">
+        <div class="confirm-modal">
+            <h3 id="confirmTitle">CONFIRM ACTION</h3>
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+            <div class="confirm-actions">
+                <button class="confirm-btn cancel" id="confirmCancel">CANCEL</button>
+                <button class="confirm-btn confirm" id="confirmOk">CONFIRM</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==========================================
         // USER AUTHENTICATION & SESSION
@@ -1031,6 +1236,49 @@
             if (currentLanguage === "mr-IN") return "mr";
             return "en";
         }
+
+        // ==========================================
+        // TOAST NOTIFICATIONS
+        // ==========================================
+        function showToast(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span>${message}</span>
+                <button class="close-btn" onclick="this.parentElement.classList.add('removing'); setTimeout(() => this.parentElement.remove(), 200);">&times;</button>
+            `;
+            container.appendChild(toast);
+            if (duration > 0) {
+                setTimeout(() => {
+                    toast.classList.add('removing');
+                    setTimeout(() => toast.remove(), 200);
+                }, duration);
+            }
+        }
+
+        // ==========================================
+        // KEYBOARD SHORTCUTS
+        // ==========================================
+        document.addEventListener('keydown', (e) => {
+            // / to focus command bar (when not in input)
+            if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                e.preventDefault();
+                document.getElementById('userInput').focus();
+            }
+            // Escape to close panels/modals
+            if (e.key === 'Escape') {
+                document.getElementById('settingsPanel').style.display = 'none';
+                document.getElementById('authModal').style.display = 'none';
+                document.getElementById('welcomeScreen').classList.add('hidden');
+                document.getElementById('confirmModalOverlay').classList.remove('visible');
+            }
+            // Ctrl+Enter to toggle voice input
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                toggleVoiceInput();
+            }
+        });
 
         function changeGender() {
             currentGender = document.getElementById("genderSelect").value;
@@ -1133,12 +1381,15 @@
                         renderBubble(item.sender, item.message, item.tag, false);
                     });
                 } else {
-                    const welcome = currentLanguage === "mr-IN"
-                        ? "जार्विस एआय सहाय्यक आणि सार्वत्रिक अभ्यास कोर ऑनलाइन आहे. सर्व पॅनेल ड्रॅग करता येतात. बोला किंवा टाइप करा!"
-                        : currentLanguage === "hi-IN"
-                        ? "जार्विस एआई सहायक और यूनिवर्सल स्टडी कोर ऑनलाइन है। सभी पैनल चलायमान (moveable) हैं। बोलकर या लिखकर अपना कोई भी सवाल पूछें!"
-                        : "VARSHA AI assistant and study tools are ready. All panels are draggable and moveable. Click SPEAK or type to solve doubts or run commands.";
-                    renderBubble("ai", welcome, "SYSTEM INITIALIZATION", false);
+                    // Show empty state
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'feed-empty';
+                    emptyDiv.innerHTML = `
+                        <div class="feed-empty-icon">💬</div>
+                        <div class="feed-empty-text">No conversation yet</div>
+                        <div class="feed-empty-hint">Press <kbd>/</kbd> to focus input, then type or click SPEAK</div>
+                    `;
+                    feed.appendChild(emptyDiv);
                 }
                 feed.scrollTop = feed.scrollHeight;
             } catch(e) {
@@ -1147,20 +1398,57 @@
         }
 
         async function clearHistory() {
-            if (!confirm(currentLanguage === "mr-IN" ? "तुम्हाला संपूर्ण चॅट इतिहास हटवायचा आहे का?" : currentLanguage === "hi-IN" ? "क्या आप पूरा चैट इतिहास हटाना चाहते हैं?" : "Clear all chat history for this user?")) return;
-            try {
-                await fetch("/api/history/clear", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({user: currentUser})
-                });
-                loadChatHistory();
-                logTerminal("Chat history wiped.");
-            } catch(e) {}
+            const overlay = document.getElementById('confirmModalOverlay');
+            const title = document.getElementById('confirmTitle');
+            const message = document.getElementById('confirmMessage');
+            const cancelBtn = document.getElementById('confirmCancel');
+            const okBtn = document.getElementById('confirmOk');
+
+            title.innerText = 'CLEAR HISTORY';
+            message.innerText = currentLanguage === "mr-IN" ? "तुम्हाला संपूर्ण चॅट इतिहास हटवायचा आहे का?" : currentLanguage === "hi-IN" ? "क्या आप पूरा चैट इतिहास हटाना चाहते हैं?" : "Clear all chat history for this user?";
+            okBtn.classList.add('danger');
+            okBtn.innerText = 'CLEAR';
+
+            const cleanup = () => {
+                overlay.classList.remove('visible');
+                cancelBtn.onclick = null;
+                okBtn.onclick = null;
+                document.removeEventListener('keydown', onKeyDown);
+            };
+
+            const onKeyDown = (e) => {
+                if (e.key === 'Escape') { cleanup(); }
+                if (e.key === 'Enter') { cleanup(); proceed(true); }
+            };
+
+            const proceed = async (approved) => {
+                cleanup();
+                if (!approved) return;
+                try {
+                    await fetch("/api/history/clear", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({user: currentUser})
+                    });
+                    loadChatHistory();
+                    logTerminal("Chat history wiped.");
+                    showToast('Chat history cleared', 'success');
+                } catch(e) {}
+            };
+
+            cancelBtn.onclick = () => cleanup();
+            okBtn.onclick = () => proceed(true);
+            document.addEventListener('keydown', onKeyDown);
+            overlay.classList.add('visible');
         }
 
         function renderBubble(sender, text, tag, scroll = true) {
             const feed = document.getElementById('feedContainer');
+            
+            // Remove empty state if present
+            const emptyState = feed.querySelector('.feed-empty');
+            if (emptyState) emptyState.remove();
+
             const bubble = document.createElement('div');
             bubble.className = `chat-bubble ${sender}`;
             if (tag) {
@@ -1172,8 +1460,19 @@
             const textEl = document.createElement('div');
             textEl.innerText = text;
             bubble.appendChild(textEl);
+            
+            // Copy button
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.innerText = 'COPY';
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(text);
+                showToast('Copied to clipboard', 'success');
+            };
+            bubble.appendChild(copyBtn);
+            
             const timeEl = document.createElement('span');
-            timeEl.className = 'bubble-time';
+            timeEl.className = 'bubble-time timestamp';
             const d = new Date();
             timeEl.textContent = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
             bubble.appendChild(timeEl);
@@ -1199,6 +1498,7 @@
             localStorage.setItem('jarvis_assistant_name', name);
             document.querySelector('.brand-text h1').innerText = `${name.toUpperCase()} // WEB ASSISTANT`;
             logTerminal(`Assistant renamed to: [${name}]`);
+            showToast(`Assistant renamed to ${name}`, 'success');
         }
 
         function toggleAllPanels() {
@@ -1459,17 +1759,22 @@
         function setListeningState(listening) {
             isListening = listening;
             const micBtn = document.getElementById('micBtn');
+            const cmdBar = document.querySelector('.cmd-bar');
             const coreBox = document.getElementById('reactorCoreBox');
             const banner = document.getElementById('voiceStateBanner');
             const isMr = currentLanguage === 'mr-IN';
             const isHi = currentLanguage === 'hi-IN';
             if (listening) {
-                micBtn.classList.add('recording');
+                micBtn.classList.add('listening');
+                micBtn.classList.remove('recording');
+                if (cmdBar) cmdBar.classList.add('listening');
                 document.getElementById('micBtnLabel').innerText = isMr ? "ऐकत आहे" : isHi ? "सुन रहा हूँ" : "LISTENING";
                 coreBox.classList.add('listening');
                 banner.innerText = isMr ? "ऐकत आहे... बोला" : isHi ? "सुन रहा हूँ... बोलिए" : "LISTENING... SPEAK NOW";
             } else {
+                micBtn.classList.remove('listening');
                 micBtn.classList.remove('recording');
+                if (cmdBar) cmdBar.classList.remove('listening');
                 document.getElementById('micBtnLabel').innerText = isMr ? "बोला" : isHi ? "बोलें" : "SPEAK";
                 coreBox.classList.remove('listening');
                 banner.innerText = isMr ? "आवाज तयार" : isHi ? "तैयार है" : "VOICE READY";
@@ -1616,7 +1921,12 @@
                 let data = await res.json();
                 typingEl.remove();
                 if (data.confirmation_required) data = await confirmAndRun(data);
-                if (!res.ok || data.success === false) throw new Error(data.error || 'Command failed.');
+                if (!res.ok || data.success === false) {
+                    const errMsg = data.error || data.output || 'Command failed.';
+                    showToast(errMsg, 'error');
+                    renderBubble('ai', errMsg, 'ERROR');
+                    return;
+                }
                 const reply = data.response || data.output || 'No response received.';
                 const respTag = currentLanguage === 'mr-IN' ? 'जार्विस // मराठी' : (currentLanguage === 'hi-IN' ? 'जार्विस // हिन्दी' : 'VARSHA RESPONSE');
                 renderBubble('ai', reply, respTag);
@@ -1628,7 +1938,9 @@
                 speakResponse(reply);
             } catch (e) {
                 typingEl.remove();
-                renderBubble('ai', `Error: ${e.message || e}`, 'ERROR');
+                const errMsg = `Error: ${e.message || e}`;
+                showToast(errMsg, 'error');
+                renderBubble('ai', errMsg, 'ERROR');
             }
         }
 
@@ -1659,7 +1971,12 @@
                 });
                 let data = await res.json();
                 if (data.confirmation_required) data = await confirmAndRun(data);
-                if (!res.ok || data.success === false) throw new Error(data.error || 'Tool failed.');
+                if (!res.ok || data.success === false) {
+                    const errMsg = data.error || data.output || 'Tool failed.';
+                    showToast(errMsg, 'error');
+                    renderBubble('ai', errMsg, 'ERROR');
+                    return;
+                }
                 const output = data.output || 'The tool completed without a message.';
                 renderBubble('ai', output, `TOOL // ${toolName.toUpperCase()}`);
                 if (data.data && data.data.image_url) appendToolImage(data.data.image_url);
@@ -1668,18 +1985,68 @@
                     try { window.open(data.data.url, '_blank'); } catch(e) {}
                 }
                 speakResponse(output);
-            } catch (e) { renderBubble('ai', `Tool error: ${e.message || e}`, 'ERROR'); }
+            } catch (e) {
+                const errMsg = `Tool error: ${e.message || e}`;
+                showToast(errMsg, 'error');
+                renderBubble('ai', errMsg, 'ERROR');
+            }
         }
 
         async function confirmAndRun(pending) {
-            const approved = window.confirm(pending.prompt || 'Allow this action?');
-            const res = await fetch('/api/confirm', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({token: pending.confirmation_token, user: currentUser, approved, lang: currentLanguage})
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('confirmModalOverlay');
+                const title = document.getElementById('confirmTitle');
+                const message = document.getElementById('confirmMessage');
+                const cancelBtn = document.getElementById('confirmCancel');
+                const okBtn = document.getElementById('confirmOk');
+
+                title.innerText = 'CONFIRM ACTION';
+                message.innerText = pending.prompt || 'Allow this action?';
+                
+                // Set danger style for destructive actions
+                okBtn.classList.remove('danger');
+                if (pending.prompt && (pending.prompt.toLowerCase().includes('close') || 
+                    pending.prompt.toLowerCase().includes('kill') || 
+                    pending.prompt.toLowerCase().includes('delete') ||
+                    pending.prompt.toLowerCase().includes('remove'))) {
+                    okBtn.classList.add('danger');
+                    okBtn.innerText = 'CONFIRM';
+                } else {
+                    okBtn.innerText = 'ALLOW';
+                }
+
+                const cleanup = () => {
+                    overlay.classList.remove('visible');
+                    cancelBtn.onclick = null;
+                    okBtn.onclick = null;
+                    document.removeEventListener('keydown', onKeyDown);
+                };
+
+                const onKeyDown = (e) => {
+                    if (e.key === 'Escape') { cleanup(); resolve({success: false, error: 'Cancelled by user.'}); }
+                    if (e.key === 'Enter') { cleanup(); proceed(true); }
+                };
+
+                const proceed = async (approved) => {
+                    cleanup();
+                    try {
+                        const res = await fetch('/api/confirm', {
+                            method: 'POST', headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({token: pending.confirmation_token, user: currentUser, approved, lang: currentLanguage})
+                        });
+                        const data = await res.json();
+                        if (!res.ok) return resolve({success: false, error: data.error || 'Confirmation failed.'});
+                        resolve(data);
+                    } catch (e) {
+                        resolve({success: false, error: e.message || 'Confirmation failed.'});
+                    }
+                };
+
+                cancelBtn.onclick = () => proceed(false);
+                okBtn.onclick = () => proceed(true);
+                document.addEventListener('keydown', onKeyDown);
+                overlay.classList.add('visible');
             });
-            const data = await res.json();
-            if (!res.ok) return {success: false, error: data.error || 'Confirmation failed.'};
-            return data;
         }
 
         function appendToolImage(url) {
