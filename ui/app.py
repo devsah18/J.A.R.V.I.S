@@ -424,7 +424,8 @@ def clear_chat_history():
 
 def save_chat_turn(user: str, sender: str, message: str, tag: str = ""):
     try:
-        user = _current_web_user()
+        if not user:
+            user = _current_web_user()
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("INSERT INTO chat_history (user_identifier, sender, message, tag) VALUES (?, ?, ?, ?)",
