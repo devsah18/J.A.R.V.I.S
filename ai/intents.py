@@ -117,6 +117,7 @@ class IntentParser:
             self._calc_cmd,
             self._image_cmd,
             self._weather_cmd,
+            self._browser_auto,
             self._news_cmd,
             self._jokes_cmd,
             self._finance_cmd,
@@ -302,6 +303,77 @@ class IntentParser:
         match = re.match(r"^(?:search(?: the web)?(?: for)?|google|look up)\s+(.+)$", low)
         if match:
             return EngineResponse(action=ActionRequest("search", {"query": match.group(1).strip()}))
+        return None
+
+    # ------------------------------------------------------------------ #
+    # Browser Automation
+    # ------------------------------------------------------------------ #
+    def _browser_auto(self, raw, low, context) -> EngineResponse | None:
+        # Navigate: "navigate to google.com", "go to https://example.com"
+        nav_match = re.match(r"^(?:navigate to|go to|browse to|open in browser)\s+(.+)$", low)
+        if nav_match:
+            target = nav_match.group(1).strip()
+            # Normalize URL
+            if not target.startswith(("http://", "https://", "mailto:", "tel:")):
+                if " " not in target and "." in target:
+                    target = "https://" + target
+            return EngineResponse(action=ActionRequest("browser_auto", {"action": "navigate", "url": target}))
+
+        # Click: "click the login button", "click on submit"
+        click_match = re.match(r"^(?:click|press|tap)\s+(?:on\s+)?(.+)$", low)
+        if click_match:
+            return EngineResponse(action=ActionRequest("browser_auto", {"action": "click", "selector": click_match.group(1).strip()}))
+
+        # Type: "type hello in the search box", "enter password in field"
+        type_match = re.match(r"^(?:type|enter|input)\s+(.+?)\s+(?:in|into|on)\s+(.+)$", low)
+        if type_match:
+            return EngineResponse(action=ActionRequest("browser_auto", {
+                "action": "type", 
+                "text": type_match.group(1).strip(),
+                "selector": type_match.group(2).strip()
+            }))
+
+        # Extract: "extract headlines from the page", "get links from results"
+        extract_match = re.match(r"^(?:extract|get|scrape|find)\s+(.+?)\s+(?:from|on)\s+(.+)$", low)
+        if extract_match:
+            return EngineResponse(action=ActionRequest("browser_auto", {
+                "action": "extract",
+                "attribute": "text",
+                "selector": extract_match.group(2).strip(),
+            }))
+
+        # Screenshot: "take a screenshot", "screenshot this page"
+        if re.match(r"^(?:take|make|capture)\s+(?:a\s+)?screenshot", low):
+            return EngineResponse(action=ActionRequest("browser_auto", {"action": "screenshot"}))
+
+        # Wait: "wait for results", "wait for page to load"
+        wait_match = re.match(r"^wait\s+(?:for\s+)?(.+)$", low)
+        if wait_match:
+            return EngineResponse(action=ActionRequest("browser_auto", {"action": "wait", "selector": wait_match.group(1).strip()}))
+
+        # Execute JS: "run script ...", "execute javascript ..."
+        js_match = re.match(r"^(?:run|execute)\s+(?:script|javascript)\s+(.+)$", low)
+        if js_match:
+            return EngineResponse(action=ActionRequest("browser_auto", {"action": "execute_js", "script": js_match.group(1).strip()}))
+
+        # Close browser: "close browser", "quit browser"
+        if re.match(r"^(?:close|quit)\s+browser", low):
+            return EngineResponse(action=ActionRequest("browser_auto", {"action": "close"}))
+
+        # Get page info: "what's the title", "what is the title", "page title", "current url", "what's the url", "get url"
+        if re.search(r"\b(?:what'?s|what is|get)\s+(?:the\s+)?(?:title|url)\b", low) or low == "current url":
+            if "url" in low:
+                return EngineResponse(action=ActionRequest("browser_auto", {"action": "get_url"}))
+            return EngineResponse(action=ActionRequest("browser_auto", {"action": "get_title"}))
+
+        # Navigation: "go back", "go forward", "refresh page"
+        if re.match(r"^go\s+back", low):
+            return EngineResponse(action=ActionRequest("browser_auto", {"action": "back"}))
+        if re.match(r"^go\s+forward", low):
+            return EngineResponse(action=ActionRequest("browser_auto", {"action": "forward"}))
+        if re.match(r"^(?:refresh|reload)\s+(?:page|browser)", low):
+            return EngineResponse(action=ActionRequest("browser_auto", {"action": "refresh"}))
+
         return None
 
     # ------------------------------------------------------------------ #

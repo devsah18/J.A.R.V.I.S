@@ -17,6 +17,7 @@ from core.permissions import PermissionManager
 from core.router import ActionRequest, Router
 from tools.apps import AppsTool
 from tools.browser import BrowserTool
+from tools.browser_auto import BrowserAutomationTool
 from tools.calculator import CalculatorTool
 from tools.dictionary import DictionaryTool
 from tools.exam_prep import ExamPrepTool
@@ -74,11 +75,13 @@ class Assistant:
         self.wake_word = WakeWordDetector(self.stt, config.WAKE_WORD)
 
         self.browser_tool = BrowserTool()
+        self.browser_auto_tool = BrowserAutomationTool()
         self.router = Router(
             [
                 SystemTool(),
                 AppsTool(),
                 self.browser_tool,
+                self.browser_auto_tool,
                 SearchTool(self.browser_tool),
                 FilesTool(),
                 TasksTool(self.memory),

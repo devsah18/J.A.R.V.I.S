@@ -17,6 +17,10 @@ gTTS                # web fallback voice output for Hindi and Marathi
 # --- UI: optional ---
 # PySide6           # holographic HUD window
 
+# --- Browser Automation: optional ---
+# selenium            # Chrome/Firefox automation (requires chromedriver)
+# webdriver-manager   # auto-manages chromedriver
+
 # --- Safety: optional ---
 # send2trash        # send deleted files to the recycle bin instead of removing
 

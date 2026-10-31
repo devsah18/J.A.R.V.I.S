@@ -24,7 +24,7 @@ class SmokeTest(unittest.TestCase):
             )
             self.assertIsNotNone(assistant.engine)
             expected = [
-                "apps", "browser", "calculator", "dictionary", "exam",
+                "apps", "browser", "browser_auto", "calculator", "dictionary", "exam",
                 "files", "finance", "game", "image", "jokes", "maps", "news",
                 "search", "system", "tasks", "weather", "wikipedia",
             ]
