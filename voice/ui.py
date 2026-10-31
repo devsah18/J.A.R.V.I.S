@@ -83,52 +83,91 @@ def listen(mic_index: int | None) -> str:
 # --------------------------------------------------------------------------- #
 def launch_ui() -> None:
     """Start the Gradio demo."""
-    with gr.Blocks() as demo:
+    assistant = os.getenv("ASSISTANT_NAME", "JARVIS")
+    with gr.Blocks(title=f"{assistant} Voice") as demo:
         gr.Markdown(
-            f"##    {os.getenv('ASSISTANT_NAME', 'JARVIS')} - Speech-to-Text Demo"
-        )
-        with gr.Row():
-            mic_dropdown = gr.Dropdown(
-                label="Microphone (auto-select if empty)",
-                choices=[],
-                type="value",
-                allow_custom_value=False,
-                interactive=True,
-            )
-            refresh_btn = gr.Button("Refresh List", variant="secondary")
-        listen_btn = gr.Button("Listen", variant="primary")
-        output_box = gr.Textbox(
-            label="Transcription",
-            lines=4,
-            placeholder="Press **Listen** and speak into the selected microphone ...",
+            f"#  {assistant} - Speech-to-Text\n"
+            "Select a microphone, click **Listen**, and speak. "
+            "The transcribed text appears below."
         )
 
-        # Populate the dropdown on start and on refresh
+        with gr.Row():
+            mic_dropdown = gr.Dropdown(
+                label="Microphone",
+                choices=[],
+                value=None,
+                interactive=True,
+                scale=4,
+            )
+            refresh_btn = gr.Button("Refresh", variant="secondary", scale=1)
+            clear_btn = gr.Button("Clear", variant="secondary", scale=1)
+
+        listen_btn = gr.Button("Listen", variant="primary", scale=4)
+        status_box = gr.Textbox(
+            label="Status",
+            value="Ready. Click Listen to begin.",
+            interactive=False,
+            lines=1,
+        )
+        output_box = gr.Textbox(
+            label="Transcription",
+            lines=6,
+            placeholder="Press **Listen** and speak into the selected microphone ...",
+            interactive=False,
+        )
+
+        with gr.Accordion("Settings", open=False):
+            energy = gr.Slider(
+                label="Energy threshold (mic sensitivity)",
+                minimum=50, maximum=400, step=10, value=STT_ENERGY_THRESHOLD,
+            )
+            pause = gr.Slider(
+                label="Pause threshold (seconds)",
+                minimum=0.3, maximum=2.0, step=0.1, value=STT_PAUSE_THRESHOLD,
+            )
+            lang_dropdown = gr.Dropdown(
+                label="Language",
+                choices=["en-US", "hi-IN", "mr-IN"],
+                value=STT_LANGUAGE,
+            )
+            apply_btn = gr.Button("Apply settings")
+
+        # Populate the dropdown on start and on refresh.
         refresh_btn.click(
-            fn=lambda: [choice[1] for choice in list_mics()],  # return just the names
+            fn=lambda: [choice[1] for choice in list_mics()],
             inputs=None,
             outputs=mic_dropdown,
         )
-        # Initial population
         demo.load(
             fn=lambda: [choice[1] for choice in list_mics()],
             inputs=None,
             outputs=mic_dropdown,
         )
 
-        # When the user clicks **Listen**, map the selected name back to its index.
-        listen_btn.click(
-            fn=lambda sel_name: listen(
-                next((idx for idx, name in list_mics() if name == sel_name), None)
-            ),
-            inputs=mic_dropdown,
-            outputs=output_box,
-        )
+        clear_btn.click(fn=lambda: "", inputs=None, outputs=output_box)
+
+        def _apply(energy_val, pause_val, lang_val):
+            """Persist chosen settings to the environment for this session."""
+            os.environ["STT_ENERGY_THRESHOLD"] = str(int(energy_val))
+            os.environ["STT_PAUSE_THRESHOLD"] = str(float(pause_val))
+            os.environ["STT_LANGUAGE"] = lang_val
+            return f"Applied: energy={int(energy_val)}, pause={float(pause_val)}, lang={lang_val}"
+
+        apply_btn.click(fn=_apply, inputs=[energy, pause, lang_dropdown], outputs=status_box)
+
+        # When the user clicks Listen, map the selected name back to its index.
+        def _listen(sel_name):
+            idx = next((i for i, n in list_mics() if n == sel_name), None)
+            try:
+                return listen(idx)
+            except Exception as e:
+                return f"Error: {e}"
+
+        listen_btn.click(fn=_listen, inputs=mic_dropdown, outputs=output_box)
 
     demo.launch(
         share=False,
         debug=False,
-        # The host/port can be changed via env vars if desired.
         server_name=os.getenv("GRADIO_HOST", "127.0.0.1"),
         server_port=int(os.getenv("GRADIO_PORT", "7860")),
     )
