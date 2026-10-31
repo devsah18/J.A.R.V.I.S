@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Voice UI – a minimal Gradio front‑end for SpeechToText.
+"""Voice UI - a minimal Gradio front-end for SpeechToText.
 
 The UI lets you:
-1. Select a microphone (auto‑selected by default).
+1. Select a microphone (auto-selected by default).
 2. Press **Listen** to capture one utterance.
 3. See the transcribed text (or an error/status message).
 
-It re‑uses the existing ``SpeechToText`` implementation and reads
+It re-uses the existing ``SpeechToText`` implementation and reads
 configuration values from ``config.py`` so you can tune thresholds
 without code changes.
 """
@@ -24,7 +24,7 @@ try:
 except ImportError as e:
     raise ImportError("Gradio is required for the UI. Install it with `pip install gradio`." ) from e
 
-# Project configuration (environment‑aware)
+# Project configuration (environment-aware)
 from config import (
     STT_DEVICE_INDEX,
     STT_ENABLED,
@@ -35,13 +35,13 @@ from config import (
     STT_PHRASE_TIME_LIMIT,
 )
 
-# Core speech‑to‑text class
+# Core speech-to-text class
 from .speech_to_text import SpeechToText
 
 log = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------------- #
-# Helper – build a SpeechToText instance respecting the current .env settings
+# Helper - build a SpeechToText instance respecting the current .env settings
 # --------------------------------------------------------------------------- #
 def _make_stt() -> SpeechToText:
     """Create a SpeechToText with the current configuration."""
@@ -69,13 +69,13 @@ def list_mics() -> list[tuple[int, str]]:
 def listen(mic_index: int | None) -> str:
     """Capture a single utterance from the selected microphone."""
     stt = _make_stt()
-    # Override the auto‑selected device if the user explicitly chose one.
+    # Override the auto-selected device if the user explicitly chose one.
     if mic_index is not None:
         stt.device_index = mic_index
-    text = stt.take_input(prompt="Listening…")
+    text = stt.take_input(prompt="Listening...")
     if not text:
         return "[No speech detected / microphone unavailable]"
-    return f"🗣️  {text}"
+    return f"    {text}"
 
 
 # --------------------------------------------------------------------------- #
@@ -85,11 +85,11 @@ def launch_ui() -> None:
     """Start the Gradio demo."""
     with gr.Blocks() as demo:
         gr.Markdown(
-            f"## 🎙️ {os.getenv('ASSISTANT_NAME', 'JARVIS')} – Speech‑to‑Text Demo"
+            f"##    {os.getenv('ASSISTANT_NAME', 'JARVIS')} - Speech-to-Text Demo"
         )
         with gr.Row():
             mic_dropdown = gr.Dropdown(
-                label="Microphone (auto‑select if empty)",
+                label="Microphone (auto-select if empty)",
                 choices=[],
                 type="value",
                 allow_custom_value=False,
@@ -100,7 +100,7 @@ def launch_ui() -> None:
         output_box = gr.Textbox(
             label="Transcription",
             lines=4,
-            placeholder="Press **Listen** and speak into the selected microphone …",
+            placeholder="Press **Listen** and speak into the selected microphone ...",
         )
 
         # Populate the dropdown on start and on refresh
