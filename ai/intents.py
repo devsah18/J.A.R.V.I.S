@@ -324,6 +324,9 @@ class IntentParser:
 
         target = self._clean_target(target)
 
+        # mailto: / tel: schemes are handled by the browser.
+        if target.startswith("mailto:") or target.startswith("tel:"):
+            return EngineResponse(action=ActionRequest("browser", {"url": target}))
         if _URL_RE.match(target) or _DOMAIN_RE.match(target):
             return EngineResponse(action=ActionRequest("browser", {"url": target}))
         if target in WEBSITES:
